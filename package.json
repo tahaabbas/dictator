@@ -1,0 +1,77 @@
+{
+	"name": "dictator",
+	"displayName": "Dictator",
+	"description": "Dictator extension for Cursor AI",
+	"version": "1.0.0",
+	"publisher": "EchoSys",
+	"author": {
+		"email": "taha@echosys.dev",
+		"name": "Taha Abbas",
+		"url": "https://echosys.dev"
+	},
+	"engines": {
+		"vscode": "^1.93.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/tahaabbas/dictator"
+	},
+	"bugs": {
+		"url": "https://github.com/tahaabbas/dictator/issues"
+	},
+	"preview": true,
+	"icon": "images/logo.png",
+	"galleryBanner": {
+		"color": "#EEEEEE"
+	},
+	"activationEvents": [
+		"*"
+	],
+	"main": "./src/extension",
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.installDictator",
+				"title": "Enable Dictator"
+			},
+			{
+				"command": "extension.uninstallDictator",
+				"title": "Disable Dictator"
+			},
+			{
+				"command": "extension.updateDictator",
+				"title": "Reload Dictator"
+			}
+		],
+		"configuration": {
+			"title": "Dictator Configuration",
+			"properties": {
+				"dictator.statusbar": {
+					"description": "Enable Status Indicator",
+					"type": "boolean",
+					"default": true
+				}
+			}
+		}
+	},
+	"devDependencies": {
+		"@vscode/vsce": "^2.22.0",
+		"eslint": "^8.21.0",
+		"eslint-config-prettier": "^8.5.0"
+	},
+	"dependencies": {
+		"file-url": "^3.0.0",
+		"node-fetch": "^2.7.0",
+		"uuid": "^8.3.2"
+	},
+	"extensionKind": [
+		"ui"
+	],
+	"scripts": {
+		"package": "npx @vscode/vsce package --out dictator.vsix",
+		"build": "npm run package"
+	}
+}
