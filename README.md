@@ -21,7 +21,7 @@ Dictator is a powerful VSCode extension that adds voice recording capabilities t
 
 ## Installation
 
-1. Install the extension in VSCode/Cursor
+1. Install the extension in Cursor
 2. Open the Command Palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
 3. Run the command: **"Enable Dictator"**
 4. Restart VSCode/Cursor when prompted
