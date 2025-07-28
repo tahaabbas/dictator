@@ -2,7 +2,8 @@
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/tahaabbas/dictator)
 
-<a href="https://www.buymeacoffee.com/echosys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+<!--<a href="https://www.buymeacoffee.com/echosys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>-->
+<a href="https://www.paypal.com/donate/?hosted_button_id=QFTNXEMVZD8GY" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-blue.svg" alt="Buy Me A Coffee" style="height: 42px" ></a>
 
 Dictator is a powerful VSCode extension that adds voice recording capabilities to Cursor AI's chat interface. Speak your thoughts and have them transcribed directly into the chat using state-of-the-art speech-to-text technology.
 
@@ -137,7 +138,8 @@ If you encounter any issues:
 2. Open an issue on [GitHub](https://github.com/tahaabbas/dictator/issues)
 3. Include your browser version, OS, and error messages
 
-<a href="https://www.buymeacoffee.com/echosys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+<!--<a href="https://www.buymeacoffee.com/echosys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>-->
+<a href="https://www.paypal.com/donate/?hosted_button_id=QFTNXEMVZD8GY" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-blue.svg" alt="Buy Me A Coffee" style="height: 42px" ></a>
 
 ## License
 
