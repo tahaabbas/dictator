@@ -6,6 +6,8 @@
 
 Dictator is a powerful VSCode extension that adds voice recording capabilities to Cursor AI's chat interface. Speak your thoughts and have them transcribed directly into the chat using state-of-the-art speech-to-text technology.
 
+<img src="https://echosys.dev/images/others/Dictator1.png" alt="Dictator for Cursor" style="height: 400px !important;" /> <img src="https://echosys.dev/images/others/Dictator2.png" alt="Dictator for Cursor" style="height: 400px !important;" />
+
 ## Features
 
 - 🎤 **Voice Recording**: Click the microphone button to start/stop recording
