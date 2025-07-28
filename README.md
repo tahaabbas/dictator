@@ -1,8 +1,8 @@
 # Dictator — speak to Cursor with real‑time voice‑to‑text
 
 <p align="left">
-<a href="https://www.buymeacoffee.com/echosys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" height="40"></a>
-<a href="https://www.paypal.com/donate/?hosted_button_id=QTFKNZEVZDBGY" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-blue.svg" alt="Donate via PayPal" height="40"></a>
+<a href="https://www.buymeacoffee.com/echosys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" height="40 !mportant"></a>
+<a href="https://www.paypal.com/donate/?hosted_button_id=QTFKNZEVZDBGY" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-blue.svg" alt="Donate via PayPal" height="40 !mportant"></a>
 </p>
 
 Dictator adds voice recording and transcription to Cursor AI’s chat interface so you can talk to your code assistant instead of typing. It runs entirely in your browser using OpenAI’s Whisper models, so your audio never leaves your machine.
@@ -16,7 +16,7 @@ Dictator adds voice recording and transcription to Cursor AI’s chat interface 
 
 ## Demo
 
-![Dictator for Cursor](https://echosys.dev/images/others/Dictator.png)
+![Dictator for Cursor](https://echosys.dev/images/others/Dictator1.png)
 ![Dictator language and model selection](https://echosys.dev/images/others/Dictator2.png)
 
 ## Getting started
