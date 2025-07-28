@@ -25,7 +25,7 @@ Dictator adds voice recording and transcription to Cursor AI’s chat interface 
 
 ### Installation
 
-1. Install the Dictator extension in VS Code or Cursor.
+1. Install the Dictator extension in Cursor.
 2. Open the command palette (`Ctrl+Shift+P` on Windows/Linux or `Cmd+Shift+P` on macOS).
 3. Type VISX and choose install from VSIX.
 4. Browse the plugin.
