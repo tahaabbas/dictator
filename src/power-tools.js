@@ -347,6 +347,7 @@ class PowerToolsUI {
         border-radius: 3px;
         font-family: monospace;
         flex-shrink: 0;
+        display: none;
       }
 
       .power-tools-menu-separator {
@@ -973,10 +974,15 @@ class PowerToolsUI {
         display: flex;
         gap: 8px;
       }
-
+      .power-tools-tab-content h3 {
+        color: #ffffff;
+      }
+      .preferences-section :nth-child(4).preference-item {
+        display: none;
+      }
       .power-tools-btn {
-        background: var(--vscode-button-background, #0e639c);
-        color: var(--vscode-button-foreground, #ffffff);
+        background:  #0099cc;
+        color: #ffffff;
         border: none;
         padding: 6px 12px;
         border-radius: 3px;
@@ -992,7 +998,9 @@ class PowerToolsUI {
       }
 
       .power-tools-btn:hover {
-        background: var(--vscode-button-hoverBackground, #1177bb);
+        background:  #0099cc;
+        color: #ffffff;
+        opacity: 0.8;
       }
 
       .power-tools-btn.secondary {
@@ -1065,10 +1073,10 @@ class PowerToolsUI {
       }
 
       .template-action-btn {
-        background-color: #004b6b;
-        border: 1px solid #004b6b;
+        background-color: #b0360d;
+        border: 1px solid #5f0f0f;
         color: #ffffff;
-        padding: 4px 8px;
+        padding: 5px 8px;
         border-radius: 3px;
         cursor: pointer;
         font-size: 10px;
@@ -1082,8 +1090,9 @@ class PowerToolsUI {
       }
 
       .template-action-btn:hover {
-        background-color: #006ba6;
-        border-color: #006ba6;
+        background-color: #b0360d;
+        border-color: #5f0f0f;
+        opacity: 0.8;
       }
 
       .template-action-btn.delete {
@@ -1094,12 +1103,13 @@ class PowerToolsUI {
       .template-action-btn.delete:hover {
         background-color: #a91e47;
         border-color: #a91e47;
+        opacity: 0.8;
       }
 
       .template-badge {
-        background: var(--vscode-badge-background, #4d4d4d);
-        color: var(--vscode-badge-foreground, #ffffff);
-        padding: 3px 6px;
+        background: #134103;
+        color: #ffffff;
+        padding: 6px 14px;
         border-radius: 3px;
         font-size: 10px;
         font-weight: 500;
@@ -1108,7 +1118,7 @@ class PowerToolsUI {
       }
 
       .template-badge.factory {
-        background-color: #004b6b;
+        background-color: transparent;
         color: #ffffff;
       }
 

@@ -790,16 +790,16 @@
   justify-content: center;
   vertical-align: middle;
   position: relative;
-  color: #1dff00;
-  background: #99fc0124;
+  color: #35ff00;
+  background: #39ff5c24;
 }
 .mic-btn:hover {
-  background: #99fc0124;
-  color: #1dff00;
+  background: #00691324;
+  color: #35ff00;
   }
 .mic-btn.active {
-  background: #99fc0124;
-  color: #1dff00;
+  background: #f78f8f1f;
+  color: ##ff0000;
 }
 .mic-btn.transcribing {
   background: #f78f8f1f;
