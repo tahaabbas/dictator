@@ -36,6 +36,33 @@ class PowerToolsConfig {
     }
   }
 
+  // Ensure backward compatibility for templates
+  normalizeTemplate(template) {
+    // If template already has emoji and displayName, return as is
+    if (template.emoji && template.displayName) {
+      return template;
+    }
+
+    // Extract emoji and displayName from combined name for backward compatibility
+    const name = template.name || '';
+    const match = name.match(/^([^\w\s]+)\s*(.*)$/);
+    
+    if (match) {
+      return {
+        ...template,
+        emoji: match[1].trim(),
+        displayName: match[2].trim() || 'Unnamed Template'
+      };
+    } else {
+      // No emoji found, use default
+      return {
+        ...template,
+        emoji: '🎯',
+        displayName: name || 'Unnamed Template'
+      };
+    }
+  }
+
   loadTemplates() {
     const templates = {};
     
@@ -44,8 +71,9 @@ class PowerToolsConfig {
     if (factoryTemplates && typeof factoryTemplates === 'object') {
       Object.values(factoryTemplates).forEach(template => {
         if (template.enabled !== false) {
-          templates[template.id] = {
-            ...template,
+          const normalizedTemplate = this.normalizeTemplate(template);
+          templates[normalizedTemplate.id] = {
+            ...normalizedTemplate,
             isFactory: true
           };
         }
@@ -57,8 +85,9 @@ class PowerToolsConfig {
     if (Array.isArray(customTemplates)) {
       customTemplates.forEach(template => {
         if (template.enabled !== false) {
-          templates[template.id] = {
-            ...template,
+          const normalizedTemplate = this.normalizeTemplate(template);
+          templates[normalizedTemplate.id] = {
+            ...normalizedTemplate,
             isFactory: false
           };
         }
@@ -267,13 +296,13 @@ class PowerToolsUI {
       }
 
       .power-tools-menu-header {
-        padding: 6px 12px 6px 12px;
+        padding: 6px 7px 9px 6px;
         font-weight: 500;
         font-size: 11px;
         color: var(--vscode-descriptionForeground, #cccccc99);
         text-transform: uppercase;
         letter-spacing: 0.3px;
-        border-bottom: 1px solid var(--vscode-menu-separatorBackground, #454545);
+        border-bottom: 1px solid #525252;
         margin-bottom: 4px;
         pointer-events: none;
       }
@@ -315,6 +344,7 @@ class PowerToolsUI {
         justify-content: center;
         color: var(--vscode-icon-foreground, #cccccc);
         flex-shrink: 0;
+        display: none;
       }
 
       .power-tools-menu-item-content {
@@ -358,13 +388,12 @@ class PowerToolsUI {
 
       /* Settings Button */
       .power-tools-settings-item {
-        border-top: 1px solid var(--vscode-menu-separatorBackground, #454545);
+        border-top: 1px solid #525252;
         margin-top: 8px;
-        padding-top: 8px;
+        padding-top: 2px;
       }
 
       .power-tools-settings-item .power-tools-menu-item {
-        font-style: italic;
         opacity: 0.9;
       }
 
@@ -502,7 +531,7 @@ class PowerToolsUI {
             <span class="codicon ${template.icon || 'codicon-symbol-method'}"></span>
           </div>
           <div class="power-tools-menu-item-content">
-            <div class="power-tools-menu-item-title">${template.name}</div>
+            <div class="power-tools-menu-item-title">${template.emoji || ''} ${template.displayName || template.name}</div>
             <div class="power-tools-menu-item-description">${template.description}</div>
           </div>
           ${template.hotkey && preferences.showHotkeys ? 
@@ -980,6 +1009,9 @@ class PowerToolsUI {
       .preferences-section :nth-child(4).preference-item {
         display: none;
       }
+       .power-tools-form-content :nth-child(5).form-group {
+        display: none;
+       }
       .power-tools-btn {
         background:  #0099cc;
         color: #ffffff;
@@ -1170,7 +1202,7 @@ class PowerToolsUI {
           <span class="codicon ${template.icon || 'codicon-symbol-method'}"></span>
         </div>
         <div class="template-info">
-          <div class="template-name">${template.name}</div>
+          <div class="template-name">${template.emoji || ''} ${template.displayName || template.name}</div>
           <div class="template-description">${template.description}</div>
           <div class="template-meta">
             <span>Category: ${template.category}</span>
@@ -1277,21 +1309,28 @@ class PowerToolsUI {
           </button>
         </div>
         <div class="power-tools-form-content">
-          <div class="form-group">
-            <label for="template-name">Template Name</label>
-            <input type="text" id="template-name" value="${template?.name || ''}" placeholder="e.g., 🎯 My Template" required>
+          <div class="form-row">
+            <div class="form-group" style="flex: 0 0 73px;">
+              <label for="template-emoji">Icon</label>
+              <div class="emoji-picker-container">
+                <button type="button" class="emoji-picker-btn" id="emoji-picker-btn">
+                  <span class="selected-emoji">${template?.emoji || '🎯'}</span>
+                  <span class="codicon codicon-chevron-down"></span>
+                </button>
+                <div class="emoji-picker-dropdown" id="emoji-picker-dropdown">
+                  <div class="emoji-grid">
+                    <!-- Emojis will be populated here -->
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="template-emoji" value="${template?.emoji || '🎯'}">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="template-name">Template Name</label>
+              <input type="text" id="template-name" value="${template?.displayName || template?.name?.replace(/^[^\w\s]+\s*/, '') || ''}" placeholder="e.g., My Awesome Template" required>
+            </div>
           </div>
-          
-          <div class="form-group">
-            <label for="template-description">Description</label>
-            <input type="text" id="template-description" value="${template?.description || ''}" placeholder="Brief description of what this template does" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="template-prompt">AI Prompt</label>
-            <textarea id="template-prompt" rows="4" placeholder="The prompt that will be sent to the AI" required>${template?.prompt || ''}</textarea>
-          </div>
-          
+
           <div class="form-row">
             <div class="form-group">
               <label for="template-category">Category</label>
@@ -1304,13 +1343,25 @@ class PowerToolsUI {
               </select>
             </div>
             
-            <div class="form-group">
+            <div class="form-group" style="display: none;">
               <label for="template-hotkey">Hotkey (Optional)</label>
               <input type="text" id="template-hotkey" value="${template?.hotkey || ''}" placeholder="e.g., cmd+shift+x">
             </div>
           </div>
           
           <div class="form-group">
+            <label for="template-description">Description</label>
+            <input type="text" id="template-description" value="${template?.description || ''}" placeholder="Brief description of what this template does" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="template-prompt">AI Prompt</label>
+            <textarea id="template-prompt" rows="4" placeholder="The prompt that will be sent to the AI" required>${template?.prompt || ''}</textarea>
+          </div>
+          
+          
+          
+          <div class="form-group" style="display: none;">
             <label for="template-icon">Icon (Optional)</label>
             <input type="text" id="template-icon" value="${template?.icon || 'codicon-symbol-method'}" placeholder="e.g., codicon-gear">
           </div>
@@ -1447,12 +1498,166 @@ class PowerToolsUI {
         justify-content: flex-end;
         background: var(--vscode-editor-background, #1e1e1e);
       }
+
+      /* Emoji Picker Styles */
+      .emoji-picker-container {
+        position: relative;
+      }
+      #power-tools-settings-modal select option {
+        background-color: #3c3c3c;
+        color: #ffffff;
+      }
+
+      .emoji-picker-btn {
+        width: 100%;
+        padding: 6px 12px;
+        background: var(--vscode-input-background, #3c3c3c);
+        border: 1px solid var(--vscode-input-border, #3c3c3c);
+        border-radius: 4px;
+        color: var(--vscode-input-foreground, #cccccc);
+        font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif);
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-sizing: border-box;
+        transition: border-color 0.15s ease;
+      }
+
+      .emoji-picker-btn:hover {
+        border-color: var(--vscode-inputOption-hoverBackground, #5a5a5a);
+      }
+
+      .emoji-picker-btn:focus {
+        outline: none;
+        border-color: var(--vscode-focusBorder, #007acc);
+        box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007acc);
+      }
+
+      .selected-emoji {
+        font-size: 16px;
+      }
+
+      .emoji-picker-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--vscode-dropdown-background, #3c3c3c);
+        border: 1px solid var(--vscode-dropdown-border, #454545);
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        display: none;
+        max-height: 193px;
+        overflow-y: auto;
+        margin-top: 2px;
+        width: 350px;
+      }
+
+      .emoji-picker-dropdown.show {
+        display: block;
+      }
+
+      .emoji-grid {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 2px;
+        padding: 8px;
+      }
+
+      .emoji-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 16px;
+        transition: background-color 0.15s ease;
+      }
+
+      .emoji-item:hover {
+        background: var(--vscode-list-hoverBackground, #2a2d2e);
+      }
+
+      .emoji-item.selected {
+        background: var(--vscode-list-activeSelectionBackground, #094771);
+      }
     `;
     
     document.head.appendChild(styles);
   }
 
   setupFormEventListeners(formOverlay, parentModal, template, isEdit) {
+    // Emoji list with 80+ emojis
+    const emojis = [
+      '🎯', '🚀', '⚙️', '🔧', '🐛', '📚', '💡', '🔍', '💻', '🎨',
+      '🛠️', '⭐', '🔥', '💬', '📝', '🧪', '🏗️', '📊', '🎭', '🎁',
+      '🏃', '⚡', '🌟', '🎪', '🎲', '🎵', '📱', '🖥️', '⌚', '📷',
+      '🎮', '🕹️', '📺', '📻', '☎️', '📞', '📠', '💾', '💿', '📀',
+      '🖱️', '⌨️', '🖨️', '🖊️', '✏️', '📏', '📐', '✂️', '🔒', '🔓',
+      '🔑', '🗝️', '🔨', '⛏️', '🪓', '🔩', '⚗️', '🧬', '🔬', '🔭',
+      '📡', '💉', '🩹', '🩺', '💊', '🧪', '🧫', '🧪', '🔬', '⚗️',
+      '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🥁', '🎷',
+      '🎺', '🎸', '🪕', '🎻', '🎯', '🏹', '🎣', '🥊', '🥋', '🎾'
+    ];
+
+    // Populate emoji grid
+    const emojiGrid = formOverlay.querySelector('.emoji-grid');
+    if (emojiGrid) {
+      emojiGrid.innerHTML = '';
+      emojis.forEach(emoji => {
+        const emojiItem = document.createElement('div');
+        emojiItem.className = 'emoji-item';
+        emojiItem.textContent = emoji;
+        emojiItem.title = emoji;
+        
+        // Mark as selected if it's the current emoji
+        const currentEmoji = formOverlay.querySelector('#template-emoji').value;
+        if (emoji === currentEmoji) {
+          emojiItem.classList.add('selected');
+        }
+        
+        // Add click handler
+        emojiItem.addEventListener('click', () => {
+          // Update selected emoji
+          formOverlay.querySelector('#template-emoji').value = emoji;
+          formOverlay.querySelector('.selected-emoji').textContent = emoji;
+          
+          // Update selected state
+          emojiGrid.querySelectorAll('.emoji-item').forEach(item => item.classList.remove('selected'));
+          emojiItem.classList.add('selected');
+          
+          // Close dropdown
+          formOverlay.querySelector('#emoji-picker-dropdown').classList.remove('show');
+        });
+        
+        emojiGrid.appendChild(emojiItem);
+      });
+    }
+
+    // Emoji picker dropdown toggle
+    const emojiPickerBtn = formOverlay.querySelector('#emoji-picker-btn');
+    const emojiDropdown = formOverlay.querySelector('#emoji-picker-dropdown');
+    
+    if (emojiPickerBtn && emojiDropdown) {
+      emojiPickerBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        emojiDropdown.classList.toggle('show');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!emojiPickerBtn.contains(e.target) && !emojiDropdown.contains(e.target)) {
+          emojiDropdown.classList.remove('show');
+        }
+      });
+    }
+
     // Close button
     const closeBtn = formOverlay.querySelector('.power-tools-close-btn');
     const cancelBtn = formOverlay.querySelector('#cancel-form');
@@ -1493,7 +1698,9 @@ class PowerToolsUI {
 
   saveTemplateFromForm(formOverlay, parentModal, existingTemplate, isEdit) {
     // Get form values
-    const name = formOverlay.querySelector('#template-name').value.trim();
+    const emoji = formOverlay.querySelector('#template-emoji').value;
+    const displayName = formOverlay.querySelector('#template-name').value.trim();
+    const name = emoji + ' ' + displayName; // Combined for backward compatibility
     const description = formOverlay.querySelector('#template-description').value.trim();
     const prompt = formOverlay.querySelector('#template-prompt').value.trim();
     const category = formOverlay.querySelector('#template-category').value;
@@ -1501,7 +1708,7 @@ class PowerToolsUI {
     const icon = formOverlay.querySelector('#template-icon').value.trim() || 'codicon-symbol-method';
     
     // Validation
-    if (!name) {
+    if (!displayName) {
       alert('Template name is required!');
       formOverlay.querySelector('#template-name').focus();
       return;
@@ -1525,6 +1732,8 @@ class PowerToolsUI {
         const updatedTemplate = {
           ...existingTemplate,
           name,
+          emoji,
+          displayName,
           description,
           prompt,
           category,
@@ -1553,11 +1762,13 @@ class PowerToolsUI {
         console.log('[PowerTools] Template updated:', updatedTemplate.name);
       } else {
         // Create new template
-        const id = name.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, '-').substring(0, 30) + '-' + Date.now();
+        const id = displayName.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, '-').substring(0, 30) + '-' + Date.now();
         
         const newTemplate = {
           id,
           name,
+          emoji,
+          displayName,
           description,
           prompt,
           category,

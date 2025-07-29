@@ -127,7 +127,7 @@ function activate(context) {
 		try {
 			const htmlContent = await fs.promises.readFile(htmlFilePath, "utf-8");
 			const m = htmlContent.match(
-				/<!-- !! VSCODE-CUSTOM-CSS-SESSION-ID ([0-9a-fA-F-]+) !! -->/
+				/<!-- !! DICTATOR-SESSION-ID ([0-9a-fA-F-]+) !! -->/
 			);
 			if (!m) return null;
 			else return m[1];
@@ -186,11 +186,11 @@ function activate(context) {
 
 		html = html.replace(
 			/(<\/html>)/,
-			`<!-- !! VSCODE-CUSTOM-CSS-SESSION-ID ${uuidSession} !! -->\n` +
-			"<!-- !! VSCODE-CUSTOM-CSS-START !! -->\n" +
+			`<!-- !! DICTATOR-SESSION-ID ${uuidSession} !! -->\n` +
+			"<!-- !! DICTATOR-START !! -->\n" +
 			indicatorJS +
 			injectHTML +
-			"<!-- !! VSCODE-CUSTOM-CSS-END !! -->\n</html>"
+			"<!-- !! DICTATOR-END !! -->\n</html>"
 		);
 		try {
 			await fs.promises.writeFile(htmlPath, html, "utf-8");
@@ -203,10 +203,10 @@ function activate(context) {
 	}
 	function clearExistingPatches(html) {
 		html = html.replace(
-			/<!-- !! VSCODE-CUSTOM-CSS-START !! -->[\s\S]*?<!-- !! VSCODE-CUSTOM-CSS-END !! -->\n*/,
+			/<!-- !! DICTATOR-START !! -->[\s\S]*?<!-- !! DICTATOR-END !! -->\n*/,
 			""
 		);
-		html = html.replace(/<!-- !! VSCODE-CUSTOM-CSS-SESSION-ID [\w-]+ !! -->\n*/g, "");
+		html = html.replace(/<!-- !! DICTATOR-SESSION-ID [\w-]+ !! -->\n*/g, "");
 		return html;
 	}
 
@@ -247,6 +247,10 @@ function activate(context) {
 			}
 			
 			if (fs.existsSync(dictatorJsPath)) {
+				// Cache busting: Add timestamp to force fresh reads
+				const cacheBreaker = Date.now() + Math.random().toString(36).substr(2, 9);
+				console.log(`[Cache Bust] Loading dictator.js with cache breaker: ${cacheBreaker}`);
+				
 				const dictatorJsContent = await fs.promises.readFile(dictatorJsPath, "utf-8");
 				const notificationCleaner = `
 /* === AUTO-DISMISS CORRUPTION NOTIFICATION === */
@@ -308,7 +312,15 @@ setTimeout(() => {
 	}
 }, 2000);
 `;
-				return `<script>\n/* === DICTATOR.JS - Voice Recording for VSCode/Cursor === */\n${dictatorJsContent}\n\n${notificationCleaner}\n</script>\n`;
+				return `<script>
+/* === DICTATOR.JS - Voice Recording for VSCode/Cursor === */
+/* Cache Breaker: ${cacheBreaker} */
+window.DICTATOR_CACHE_ID = '${cacheBreaker}';
+${dictatorJsContent}
+
+${notificationCleaner}
+</script>
+`;
 			} else {
 				console.warn("dictator.js not found at:", dictatorJsPath);
 				vscode.window.showWarningMessage("dictator.js not found. Voice recording functionality will not be available.");
@@ -332,6 +344,10 @@ setTimeout(() => {
 			}
 			
 			if (fs.existsSync(powerToolsJsPath)) {
+				// Cache busting: Add timestamp to force fresh reads
+				const cacheBreaker = Date.now() + Math.random().toString(36).substr(2, 9);
+				console.log(`[Cache Bust] Loading power-tools.js with cache breaker: ${cacheBreaker}`);
+				
 				const powerToolsJsContent = await fs.promises.readFile(powerToolsJsPath, "utf-8");
 				// Add event listener for settings requests from the UI
 				const settingsEventHandler = `
@@ -479,7 +495,15 @@ function syncSettingsToLocalStorage() {
 syncSettingsToLocalStorage();
 `;
 				
-				return `<script>\n/* === POWER TOOLS - Advanced Developer Features for Cursor === */\n${powerToolsJsContent}\n\n${settingsEventHandler}\n</script>\n`;
+				return `<script>
+/* === POWER TOOLS - Advanced Developer Features for Cursor === */
+/* Cache Breaker: ${cacheBreaker} */
+window.POWER_TOOLS_CACHE_ID = '${cacheBreaker}';
+${powerToolsJsContent}
+
+${settingsEventHandler}
+</script>
+`;
 			} else {
 				console.warn("power-tools.js not found at:", powerToolsJsPath);
 				// Power tools is optional, so don't show a warning to users
