@@ -3,11 +3,11 @@
 	"displayName": "Dictator - AI Voice & Power Tools",
 	"description": "Voice recording with ASR + powerful developer tools for Cursor AI chat interface",
 	"version": "1.0.0",
-	"publisher": "EchoSys",
+	"publisher": "TahaA",
 	"author": {
-		"email": "taha@echosys.dev",
+		"email": "taha.abbas@gmail.com",
 		"name": "Taha Abbas",
-		"url": "https://echosys.dev"
+		"url": "https://tdrintl.com"
 	},
 	"engines": {
 		"vscode": "^1.93.0"
