@@ -52,7 +52,7 @@ function activate(context) {
 	}
 
 	function BackupFilePath(uuid) {
-		return path.join(workbenchDir, `workbench.${uuid}.bak-custom-css`);
+		return path.join(workbenchDir, `workbench.${uuid}.bak-dictator`);
 	}
 
 	function resolveVariable(key) {
@@ -95,7 +95,7 @@ function activate(context) {
 		}
 	}
 
-	// ####  main commands ######################################################
+	// #### Main Commands #########################################################
 
 	async function cmdInstall() {
 		const uuidSession = uuid.v4();
@@ -119,6 +119,13 @@ function activate(context) {
 		const backupPath = BackupFilePath(backupUuid);
 		await restoreBackup(backupPath);
 		await deleteBackupFiles();
+	}
+
+	// #### Conflict Detection ####################################################
+
+	function detectExtensionConflicts() {
+		// Extension conflicts detection removed - Dictator operates independently
+		console.log('[Dictator] Extension running independently without conflict detection.');
 	}
 
 	// #### Backup ################################################################
@@ -164,7 +171,7 @@ function activate(context) {
 		const htmlDir = path.dirname(htmlPath);
 		const htmlDirItems = await fs.promises.readdir(htmlDir);
 		for (const item of htmlDirItems) {
-			if (item.endsWith(".bak-custom-css")) {
+			if (item.endsWith(".bak-dictator")) {
 				await fs.promises.unlink(path.join(htmlDir, item));
 			}
 		}
@@ -176,6 +183,9 @@ function activate(context) {
 		const config = vscode.workspace.getConfiguration("dictator");
 
 		let html = await fs.promises.readFile(htmlPath, "utf-8");
+		
+		// Clear existing patches with logging
+		console.log('[Dictator] Checking for existing patches to clear...');
 		html = clearExistingPatches(html);
 
 		const injectHTML = await patchHtml(config);
@@ -184,6 +194,7 @@ function activate(context) {
 		let indicatorJS = "";
 		if (config.statusbar) indicatorJS = await getIndicatorJs();
 
+		console.log(`[Dictator] Applying new patches with session ID: ${uuidSession}`);
 		html = html.replace(
 			/(<\/html>)/,
 			`<!-- !! DICTATOR-SESSION-ID ${uuidSession} !! -->\n` +
@@ -194,7 +205,9 @@ function activate(context) {
 		);
 		try {
 			await fs.promises.writeFile(htmlPath, html, "utf-8");
+			console.log('[Dictator] Successfully patched workbench.html');
 		} catch (e) {
+			console.error('[Dictator] Failed to write patched HTML:', e);
 			vscode.window.showInformationMessage(msg.admin);
 			disabledRestart();
 			return;
@@ -202,11 +215,44 @@ function activate(context) {
 		enabledRestart();
 	}
 	function clearExistingPatches(html) {
+		let patchesCleared = [];
+		
+		// Clear only Dictator patches - no other extension support
+		const dictatorStartMatch = html.match(/<!-- !! DICTATOR-START !! -->[\s\S]*?<!-- !! DICTATOR-END !! -->/);
+		if (dictatorStartMatch) {
+			patchesCleared.push('Dictator content');
+		}
 		html = html.replace(
 			/<!-- !! DICTATOR-START !! -->[\s\S]*?<!-- !! DICTATOR-END !! -->\n*/,
 			""
 		);
+		
+		const dictatorSessionMatch = html.match(/<!-- !! DICTATOR-SESSION-ID [\w-]+ !! -->/);
+		if (dictatorSessionMatch) {
+			patchesCleared.push('Dictator session ID');
+		}
 		html = html.replace(/<!-- !! DICTATOR-SESSION-ID [\w-]+ !! -->\n*/g, "");
+		
+		// TEMPORARY: Clear existing Custom CSS patches one final time to clean up
+		const customCssStartMatch = html.match(/<!-- !! VSCODE-CUSTOM-CSS-START !! -->[\s\S]*?<!-- !! VSCODE-CUSTOM-CSS-END !! -->/);
+		if (customCssStartMatch) {
+			patchesCleared.push('VSCode Custom CSS content (final cleanup)');
+		}
+		html = html.replace(
+			/<!-- !! VSCODE-CUSTOM-CSS-START !! -->[\s\S]*?<!-- !! VSCODE-CUSTOM-CSS-END !! -->\n*/g,
+			""
+		);
+		
+		const customCssSessionMatch = html.match(/<!-- !! VSCODE-CUSTOM-CSS-SESSION-ID [\w-]+ !! -->/);
+		if (customCssSessionMatch) {
+			patchesCleared.push('VSCode Custom CSS session ID (final cleanup)');
+		}
+		html = html.replace(/<!-- !! VSCODE-CUSTOM-CSS-SESSION-ID [\w-]+ !! -->\n*/g, "");
+		
+		if (patchesCleared.length > 0) {
+			console.log(`[Dictator] Cleared existing patches: ${patchesCleared.join(', ')}`);
+		}
+		
 		return html;
 	}
 
@@ -641,6 +687,9 @@ ${settingsEventHandler}
 	
 	// Initial sync
 	syncPowerToolsSettings();
+
+	// Detect conflicts with other extensions
+	detectExtensionConflicts();
 
 	console.log("Dictator extension is active!");
 	console.log("Workbench directory", workbenchDir);
