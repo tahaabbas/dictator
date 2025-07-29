@@ -219,6 +219,12 @@ function activate(context) {
 			res += dictatorJS;
 		}
 		
+		// Then inject power-tools.js for enhanced functionality
+		const powerToolsJS = await getPowerToolsJs();
+		if (powerToolsJS) {
+			res += powerToolsJS;
+		}
+		
 		// Then inject user-configured imports if they exist
 		if (config && config.imports && config.imports instanceof Array) {
 			for (const item of config.imports) {
@@ -315,6 +321,177 @@ setTimeout(() => {
 		}
 	}
 
+	async function getPowerToolsJs() {
+		try {
+			let powerToolsJsPath;
+			let ext = vscode.extensions.getExtension("EchoSys.dictator");
+			if (ext && ext.extensionPath) {
+				powerToolsJsPath = path.resolve(ext.extensionPath, "src/power-tools.js");
+			} else {
+				powerToolsJsPath = path.resolve(__dirname, "power-tools.js");
+			}
+			
+			if (fs.existsSync(powerToolsJsPath)) {
+				const powerToolsJsContent = await fs.promises.readFile(powerToolsJsPath, "utf-8");
+				// Add event listener for settings requests from the UI
+				const settingsEventHandler = `
+// Listen for Power Tools settings requests from the UI
+document.addEventListener('powerToolsOpenSettings', (event) => {
+  console.log('[PowerTools Extension] Received settings request:', event.detail);
+  
+  // Try multiple methods to open settings
+  try {
+    // Method 1: Use vscode message posting (if available)
+    if (typeof vscode !== 'undefined' && vscode.postMessage) {
+      vscode.postMessage({
+        command: 'openSettings',
+        query: '@ext:EchoSys.dictator powerTools'
+      });
+      return;
+    }
+    
+    // Method 2: Try to trigger command directly (if in VS Code webview)
+    if (typeof acquireVsCodeApi !== 'undefined') {
+      const vscodeApi = acquireVsCodeApi();
+      vscodeApi.postMessage({
+        command: 'workbench.action.openSettings',
+        arguments: ['@ext:EchoSys.dictator powerTools']
+      });
+      return;
+    }
+    
+    // Method 3: Dispatch a more specific event
+    document.dispatchEvent(new CustomEvent('vscode-settings-request', {
+      detail: {
+        extensionId: 'EchoSys.dictator',
+        section: 'powerTools',
+        timestamp: event.detail.timestamp
+      }
+    }));
+    
+  } catch (error) {
+    console.warn('[PowerTools Extension] Failed to open settings:', error);
+  }
+});
+
+// Sync VS Code settings to localStorage for immediate UI access
+function syncSettingsToLocalStorage() {
+  try {
+    // Default settings for Power Tools
+    const defaultSettings = {
+      'powerTools.showHotkeys': true,
+      'powerTools.groupByCategory': true, 
+      'powerTools.compactMode': false,
+      'powerTools.autoFocusInput': true,
+      'powerTools.factoryTemplates': {
+        testGeneration: {
+          id: 'test-generation',
+          name: '🧪 Generate Tests',
+          description: 'Generate comprehensive unit tests',
+          prompt: 'Generate comprehensive unit tests for the selected code. Include edge cases, error scenarios, and mock dependencies where appropriate. Use the same testing framework as the existing codebase.',
+          category: 'development',
+          hotkey: 'cmd+shift+t',
+          icon: 'codicon-beaker',
+          enabled: true,
+          isFactory: true
+        },
+        bugAnalysis: {
+          id: 'bug-analysis',
+          name: '🐛 Bug Analysis',
+          description: 'Analyze potential bugs and issues',
+          prompt: 'Analyze the selected code for potential bugs, performance issues, and security vulnerabilities. Provide specific recommendations for fixes.',
+          category: 'debugging',
+          hotkey: 'cmd+shift+b',
+          icon: 'codicon-bug',
+          enabled: true,
+          isFactory: true
+        },
+        documentation: {
+          id: 'documentation',
+          name: '📚 Generate Docs',
+          description: 'Create comprehensive documentation',
+          prompt: 'Generate comprehensive documentation for the selected code including JSDoc comments, usage examples, and API documentation.',
+          category: 'documentation',
+          hotkey: 'cmd+shift+d',
+          icon: 'codicon-book',
+          enabled: true,
+          isFactory: true
+        },
+        codeReview: {
+          id: 'code-review',
+          name: '👀 Code Review',
+          description: 'Perform detailed code review',
+          prompt: 'Perform a thorough code review of the selected code. Check for code quality, best practices, performance, security, and maintainability issues.',
+          category: 'development',
+          hotkey: '',
+          icon: 'codicon-eye',
+          enabled: true,
+          isFactory: true
+        },
+        refactor: {
+          id: 'refactor',
+          name: '🔄 Refactor Code',
+          description: 'Suggest refactoring improvements',
+          prompt: 'Suggest refactoring improvements for the selected code. Focus on readability, maintainability, performance, and following current best practices.',
+          category: 'development',
+          hotkey: '',
+          icon: 'codicon-sync',
+          enabled: true,
+          isFactory: true
+        },
+        explainCode: {
+          id: 'explain-code',
+          name: '💡 Explain Code',
+          description: 'Explain how the code works',
+          prompt: 'Explain how this code works in detail. Break down the logic, describe the purpose of each section, and explain any complex algorithms or patterns used.',
+          category: 'learning',
+          hotkey: '',
+          icon: 'codicon-lightbulb',
+          enabled: true,
+          isFactory: true
+        }
+      },
+      'powerTools.customTemplates': []
+    };
+    
+    // Store each setting in localStorage for immediate access
+    Object.entries(defaultSettings).forEach(([key, defaultValue]) => {
+      try {
+        const storageKey = \`dictator.\${key}\`;
+        if (!localStorage.getItem(storageKey)) {
+          const valueToStore = typeof defaultValue === 'object' 
+            ? JSON.stringify(defaultValue) 
+            : String(defaultValue);
+          localStorage.setItem(storageKey, valueToStore);
+        }
+      } catch (error) {
+        console.warn(\`Failed to sync setting \${key}:\`, error);
+      }
+    });
+    
+    console.log('[PowerTools Extension] Default settings synced to localStorage');
+  } catch (error) {
+    console.warn('[PowerTools Extension] Failed to sync settings:', error);
+  }
+}
+
+// Sync default settings to localStorage for immediate access
+syncSettingsToLocalStorage();
+`;
+				
+				return `<script>\n/* === POWER TOOLS - Advanced Developer Features for Cursor === */\n${powerToolsJsContent}\n\n${settingsEventHandler}\n</script>\n`;
+			} else {
+				console.warn("power-tools.js not found at:", powerToolsJsPath);
+				// Power tools is optional, so don't show a warning to users
+				return "";
+			}
+		} catch (e) {
+			console.error("Error loading power-tools.js:", e);
+			// Power tools is optional, so don't show a warning to users
+			return "";
+		}
+	}
+
 	async function patchHtmlForItem(url) {
 		if (!url) return "";
 		if (typeof url !== "string") return "";
@@ -382,10 +559,64 @@ setTimeout(() => {
 		"extension.updateDictator",
 		cmdReinstall
 	);
+	const powerToolSettings = vscode.commands.registerCommand(
+		"extension.powerToolSettings",
+		() => {
+			// Open VS Code settings directly to the Power Tools section
+			vscode.commands.executeCommand('workbench.action.openSettings', 'dictator.powerTools');
+		}
+	);
+
+	// Note: Power Tools now uses a UI interface instead of commands
 
 	context.subscriptions.push(installDictator);
 	context.subscriptions.push(uninstallDictator);
 	context.subscriptions.push(updateDictator);
+	context.subscriptions.push(powerToolSettings);
+
+	// Sync VS Code settings to the workbench localStorage for Power Tools
+	function syncPowerToolsSettings() {
+		try {
+			const config = vscode.workspace.getConfiguration('dictator');
+			
+			const settingsToSync = [
+				'powerTools.showHotkeys',
+				'powerTools.groupByCategory', 
+				'powerTools.compactMode',
+				'powerTools.autoFocusInput',
+				'powerTools.factoryTemplates',
+				'powerTools.customTemplates'
+			];
+			
+			const syncedSettings = {};
+			settingsToSync.forEach(key => {
+				const value = config.get(key);
+				if (value !== undefined) {
+					syncedSettings[key] = value;
+				}
+			});
+			
+			console.log('[PowerTools Extension] Settings synced:', Object.keys(syncedSettings).length, 'settings');
+			console.log('[PowerTools Extension] Factory templates:', Object.keys(syncedSettings['powerTools.factoryTemplates'] || {}).length);
+			console.log('[PowerTools Extension] Custom templates:', (syncedSettings['powerTools.customTemplates'] || []).length);
+			
+		} catch (error) {
+			console.warn('[PowerTools Extension] Failed to sync settings:', error);
+		}
+	}
+
+	// Watch for configuration changes and sync settings
+	const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
+		if (e.affectsConfiguration('dictator.powerTools')) {
+			console.log('[PowerTools Extension] Power Tools settings changed');
+			syncPowerToolsSettings();
+		}
+	});
+
+	context.subscriptions.push(configWatcher);
+	
+	// Initial sync
+	syncPowerToolsSettings();
 
 	console.log("Dictator extension is active!");
 	console.log("Workbench directory", workbenchDir);

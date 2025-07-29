@@ -790,19 +790,20 @@
   justify-content: center;
   vertical-align: middle;
   position: relative;
-  color: #888;
+  color: #1dff00;
+  background: #99fc0124;
 }
 .mic-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #555;
-}
+  background: #99fc0124;
+  color: #1dff00;
+  }
 .mic-btn.active {
-  color: #e66;
-  background: rgba(255, 100, 100, 0.1);
+  background: #99fc0124;
+  color: #1dff00;
 }
 .mic-btn.transcribing {
-  color: #0cf;
-  background: rgba(0, 200, 255, 0.1);
+  background: #f78f8f1f;
+  color: #ff0000;
 }
 .mic-btn.disabled {
   cursor: not-allowed;

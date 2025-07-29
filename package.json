@@ -1,7 +1,7 @@
 {
 	"name": "dictator",
-	"displayName": "Dictator",
-	"description": "Dictator extension for Cursor AI",
+	"displayName": "Dictator - AI Voice & Power Tools",
+	"description": "Voice recording with ASR + powerful developer tools for Cursor AI chat interface",
 	"version": "1.0.0",
 	"publisher": "EchoSys",
 	"author": {
@@ -44,6 +44,10 @@
 			{
 				"command": "extension.updateDictator",
 				"title": "Reload Dictator"
+			},
+			{
+				"command": "extension.powerToolSettings",
+				"title": "⚡ Power Tool Settings"
 			}
 		],
 		"configuration": {
@@ -53,6 +57,156 @@
 					"description": "Enable Status Indicator",
 					"type": "boolean",
 					"default": true
+				},
+				"dictator.powerTools.showHotkeys": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show keyboard shortcuts in the Power Tools context menu"
+				},
+				"dictator.powerTools.groupByCategory": {
+					"type": "boolean",
+					"default": true,
+					"description": "Group Power Tools templates by category in the context menu"
+				},
+				"dictator.powerTools.compactMode": {
+					"type": "boolean",
+					"default": false,
+					"description": "Use compact display mode for Power Tools context menu"
+				},
+				"dictator.powerTools.autoFocusInput": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically focus chat input after executing a template"
+				},
+				"dictator.powerTools.factoryTemplates": {
+					"type": "object",
+					"description": "Built-in Power Tools templates (editable but not deletable)",
+					"default": {
+						"testGeneration": {
+							"id": "test-generation",
+							"name": "🧪 Generate Tests",
+							"description": "Generate comprehensive unit tests",
+							"prompt": "Generate comprehensive unit tests for the selected code. Include edge cases, error scenarios, and mock dependencies where appropriate. Use the same testing framework as the existing codebase.",
+							"category": "development",
+							"hotkey": "cmd+shift+t",
+							"icon": "codicon-beaker",
+							"enabled": true,
+							"isFactory": true
+						},
+						"bugAnalysis": {
+							"id": "bug-analysis",
+							"name": "🐛 Bug Analysis",
+							"description": "Analyze potential bugs and issues",
+							"prompt": "Analyze the selected code for potential bugs, performance issues, and security vulnerabilities. Provide specific recommendations for fixes.",
+							"category": "debugging",
+							"hotkey": "cmd+shift+b",
+							"icon": "codicon-bug",
+							"enabled": true,
+							"isFactory": true
+						},
+						"documentation": {
+							"id": "documentation",
+							"name": "📚 Generate Docs",
+							"description": "Create comprehensive documentation",
+							"prompt": "Generate comprehensive documentation for the selected code including JSDoc comments, usage examples, and API documentation.",
+							"category": "documentation",
+							"hotkey": "cmd+shift+d",
+							"icon": "codicon-book",
+							"enabled": true,
+							"isFactory": true
+						},
+						"codeReview": {
+							"id": "code-review",
+							"name": "👀 Code Review",
+							"description": "Perform detailed code review",
+							"prompt": "Perform a thorough code review of the selected code. Check for code quality, best practices, performance, security, and maintainability issues.",
+							"category": "development",
+							"hotkey": "",
+							"icon": "codicon-eye",
+							"enabled": true,
+							"isFactory": true
+						},
+						"refactor": {
+							"id": "refactor",
+							"name": "🔄 Refactor Code",
+							"description": "Suggest refactoring improvements",
+							"prompt": "Suggest refactoring improvements for the selected code. Focus on readability, maintainability, performance, and following current best practices.",
+							"category": "development",
+							"hotkey": "",
+							"icon": "codicon-sync",
+							"enabled": true,
+							"isFactory": true
+						},
+						"explainCode": {
+							"id": "explain-code",
+							"name": "💡 Explain Code",
+							"description": "Explain how the code works",
+							"prompt": "Explain how this code works in detail. Break down the logic, describe the purpose of each section, and explain any complex algorithms or patterns used.",
+							"category": "learning",
+							"hotkey": "",
+							"icon": "codicon-lightbulb",
+							"enabled": true,
+							"isFactory": true
+						}
+					},
+					"additionalProperties": {
+						"type": "object",
+						"properties": {
+							"id": { "type": "string" },
+							"name": { "type": "string" },
+							"description": { "type": "string" },
+							"prompt": { "type": "string" },
+							"category": { "type": "string", "enum": ["development", "debugging", "documentation", "learning", "general"] },
+							"hotkey": { "type": "string" },
+							"icon": { "type": "string" },
+							"enabled": { "type": "boolean" },
+							"isFactory": { "type": "boolean" }
+						}
+					}
+				},
+				"dictator.powerTools.customTemplates": {
+					"type": "array",
+					"description": "Custom Power Tools templates (addable and deletable)",
+					"default": [],
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"description": "Unique identifier for the template"
+							},
+							"name": {
+								"type": "string",
+								"description": "Display name (e.g., '🎯 My Template')"
+							},
+							"description": {
+								"type": "string",
+								"description": "Brief description of what this template does"
+							},
+							"prompt": {
+								"type": "string",
+								"description": "The AI prompt text"
+							},
+							"category": {
+								"type": "string",
+								"enum": ["development", "debugging", "documentation", "learning", "general"],
+								"description": "Template category"
+							},
+							"hotkey": {
+								"type": "string",
+								"description": "Keyboard shortcut (e.g., 'cmd+shift+x')"
+							},
+							"icon": {
+								"type": "string",
+								"description": "Codicon class name (e.g., 'codicon-gear')"
+							},
+							"enabled": {
+								"type": "boolean",
+								"description": "Whether this template is enabled"
+							}
+						},
+						"required": ["id", "name", "prompt"]
+					}
 				}
 			}
 		}
