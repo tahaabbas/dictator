@@ -5,8 +5,8 @@
 		const e2 = document.querySelector(".right-items .__DICTATOR_CLS");
 		if (e1 && !e2) {
 			let e = document.createElement("div");
-			e.id = "be5invis.vscode-custom-css";
-			e.title = "Custom CSS and JS";
+			e.id = "TahaA.dictator";
+			e.title = "DICTATOR";
 			e.className = "statusbar-item right __DICTATOR_CLS";
 			{
 				const a = document.createElement("a");
