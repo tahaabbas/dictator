@@ -53,5 +53,5 @@ This project is licensed under the MIT License. See `LICENSE.txt` for details.
 
 <p align="right">
 <!--<a href="https://www.buymeacoffee.com/echosys" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" height="40 !mportant"></a>-->
-<a href="https://www.paypal.com/donate/?hosted_button_id=QTFKNZEVZDBGY" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-blue.svg" alt="Donate via PayPal" height="24 !mportant"></a>
+<!--<a href="https://www.paypal.com/donate/?hosted_button_id=QTFKNZEVZDBGY" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-blue.svg" alt="Donate via PayPal" height="24 !mportant"></a>-->
 </p>
