@@ -107,6 +107,7 @@ class PowerToolsConfig {
         category: 'development',
         hotkey: 'cmd+shift+t',
         icon: 'codicon-beaker',
+        autoSend: false,
         enabled: true,
         isFactory: true
       },
@@ -118,6 +119,7 @@ class PowerToolsConfig {
         category: 'debugging',
         hotkey: 'cmd+shift+b',
         icon: 'codicon-bug',
+        autoSend: false,
         enabled: true,
         isFactory: true
       },
@@ -129,6 +131,7 @@ class PowerToolsConfig {
         category: 'documentation',
         hotkey: 'cmd+shift+d',
         icon: 'codicon-book',
+        autoSend: false,
         enabled: true,
         isFactory: true
       },
@@ -140,6 +143,7 @@ class PowerToolsConfig {
         category: 'development',
         hotkey: '',
         icon: 'codicon-eye',
+        autoSend: false,
         enabled: true,
         isFactory: true
       },
@@ -151,6 +155,7 @@ class PowerToolsConfig {
         category: 'development',
         hotkey: '',
         icon: 'codicon-sync',
+        autoSend: false,
         enabled: true,
         isFactory: true
       },
@@ -162,6 +167,7 @@ class PowerToolsConfig {
         category: 'learning',
         hotkey: '',
         icon: 'codicon-lightbulb',
+        autoSend: false,
         enabled: true,
         isFactory: true
       }
@@ -651,10 +657,17 @@ class PowerToolsUI {
     // Insert into chat input
     this.insertTextIntoChat(chatInput, finalPrompt);
     
-    // Focus and auto-submit if configured
+    // Focus chat input
     chatInput.focus();
     
-    console.log(`[PowerTools] Executed template: ${template.name}`);
+    // Auto-send if enabled
+    if (template.autoSend) {
+      setTimeout(() => {
+        this.triggerSendButton();
+      }, 100); // Small delay to ensure text is properly inserted
+    }
+    
+    console.log(`[PowerTools] Executed template: ${template.name}${template.autoSend ? ' (auto-sent)' : ''}`);
   }
 
   getSelectedText() {
@@ -696,6 +709,42 @@ class PowerToolsUI {
     // Trigger input event (same as dictator.js)
     const inputEvent = new Event('input', { bubbles: true, cancelable: true });
     chatInput.dispatchEvent(inputEvent);
+  }
+
+  triggerSendButton() {
+    try {
+      // Find the send button using the provided selector
+      const composerButtons = document.querySelector('div.composer-bar-input-buttons > div.button-container');
+      if (!composerButtons) {
+        console.warn('[PowerTools] Could not find composer button container');
+        return false;
+      }
+      
+      // Get all anysphere-icon-button elements and find the last one (send button)
+      const iconButtons = composerButtons.querySelectorAll('div.anysphere-icon-button');
+      const sendButton = iconButtons[iconButtons.length - 1];
+      
+      if (!sendButton) {
+        console.warn('[PowerTools] Could not find send button');
+        return false;
+      }
+      
+      // Check if the button contains the arrow-up-two icon (send button indicator)
+      const sendIcon = sendButton.querySelector('span.codicon-arrow-up-two');
+      if (!sendIcon) {
+        console.warn('[PowerTools] Send button icon not found, may not be the correct button');
+        // Still try to click it in case the icon class changed
+      }
+      
+      // Trigger the click event
+      sendButton.click();
+      console.log('[PowerTools] Send button clicked successfully');
+      return true;
+      
+    } catch (error) {
+      console.error('[PowerTools] Error triggering send button:', error);
+      return false;
+    }
   }
 
   setupEventListeners() {
@@ -1099,6 +1148,15 @@ class PowerToolsUI {
         gap: 12px;
       }
 
+      .auto-send-indicator {
+        color: #fbbf24 !important;
+        font-weight: 600 !important;
+        background: rgba(251, 191, 36, 0.1);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px !important;
+      }
+
       .template-actions-btns {
         display: flex;
         gap: 4px;
@@ -1207,6 +1265,7 @@ class PowerToolsUI {
           <div class="template-meta">
             <span>Category: ${template.category}</span>
             ${template.hotkey ? `<span>Hotkey: ${template.hotkey}</span>` : ''}
+            ${template.autoSend ? `<span class="auto-send-indicator">⚡ Auto-Send</span>` : ''}
           </div>
         </div>
         <div class="template-badge ${template.isFactory ? 'factory' : ''}">${template.isFactory ? 'Factory' : 'Custom'}</div>
@@ -1359,7 +1418,13 @@ class PowerToolsUI {
             <textarea id="template-prompt" rows="4" placeholder="The prompt that will be sent to the AI" required>${template?.prompt || ''}</textarea>
           </div>
           
-          
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="template-auto-send" ${template?.autoSend ? 'checked' : ''}>
+              <span class="checkbox-text">Send command immediately after injection</span>
+            </label>
+            <div class="form-help-text">When enabled, the template will be automatically sent to the AI without requiring manual submission</div>
+          </div>
           
           <div class="form-group" style="display: none;">
             <label for="template-icon">Icon (Optional)</label>
@@ -1488,6 +1553,34 @@ class PowerToolsUI {
       .form-group textarea {
         resize: vertical;
         min-height: 80px;
+      }
+
+      .checkbox-label {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        margin-bottom: 0 !important;
+      }
+
+      .checkbox-label input[type="checkbox"] {
+        width: 16px !important;
+        height: 16px !important;
+        margin: 0 !important;
+        cursor: pointer;
+      }
+
+      .checkbox-text {
+        font-size: 13px;
+        color: var(--vscode-foreground, #cccccc);
+        font-weight: 500;
+      }
+
+      .form-help-text {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground, #cccccc99);
+        margin-top: 4px;
+        line-height: 1.3;
       }
 
       .power-tools-form-footer {
@@ -1706,6 +1799,7 @@ class PowerToolsUI {
     const category = formOverlay.querySelector('#template-category').value;
     const hotkey = formOverlay.querySelector('#template-hotkey').value.trim();
     const icon = formOverlay.querySelector('#template-icon').value.trim() || 'codicon-symbol-method';
+    const autoSend = formOverlay.querySelector('#template-auto-send').checked;
     
     // Validation
     if (!displayName) {
@@ -1738,7 +1832,8 @@ class PowerToolsUI {
           prompt,
           category,
           hotkey,
-          icon
+          icon,
+          autoSend
         };
         
         if (existingTemplate.isFactory) {
@@ -1774,6 +1869,7 @@ class PowerToolsUI {
           category,
           hotkey,
           icon,
+          autoSend,
           enabled: true,
           isFactory: false
         };
