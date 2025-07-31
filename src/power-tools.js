@@ -1359,6 +1359,8 @@ class PowerToolsUI {
     const isEdit = template !== null;
     const isFactory = template?.isFactory || false;
     
+    console.log('[PowerTools] Creating template form with autoSend:', template?.autoSend);
+    
     formOverlay.innerHTML = `
       <div class="power-tools-form">
         <div class="power-tools-form-header">
@@ -1444,6 +1446,12 @@ class PowerToolsUI {
     // Add to document
     document.body.appendChild(formOverlay);
     
+    // Debug: Verify checkbox exists
+    setTimeout(() => {
+      const checkbox = formOverlay.querySelector('#template-auto-send');
+      console.log('[PowerTools] Auto-send checkbox found:', !!checkbox, checkbox);
+    }, 100);
+    
     // Focus first input
     setTimeout(() => {
       const firstInput = formOverlay.querySelector('#template-name');
@@ -1455,8 +1463,12 @@ class PowerToolsUI {
   }
 
   addFormStyles() {
-    if (document.getElementById('power-tools-form-styles')) return;
+    if (document.getElementById('power-tools-form-styles')) {
+      console.log('[PowerTools] Form styles already exist');
+      return;
+    }
     
+    console.log('[PowerTools] Adding form styles including checkbox styles');
     const styles = document.createElement('style');
     styles.id = 'power-tools-form-styles';
     styles.textContent = `
@@ -1801,6 +1813,8 @@ class PowerToolsUI {
     const icon = formOverlay.querySelector('#template-icon').value.trim() || 'codicon-symbol-method';
     const autoSend = formOverlay.querySelector('#template-auto-send').checked;
     
+    console.log('[PowerTools] Saving template with autoSend:', autoSend);
+    
     // Validation
     if (!displayName) {
       alert('Template name is required!');
@@ -2008,7 +2022,7 @@ window.PowerTools = {
   }
 };
 
-console.log('[PowerTools] Power Tools system loaded');
+console.log('[PowerTools] Power Tools system loaded - v1.1.0 with AutoSend feature');
 
 // Auto-dismiss Cursor corruption notification (same as dictator.js)
 setTimeout(() => {
