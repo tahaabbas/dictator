@@ -1138,6 +1138,10 @@ class PowerToolsUI {
         border-color: var(--vscode-focusBorder, #007acc);
       }
 
+      .template-item:last-child {
+        margin-bottom: 17px;
+      }
+
       .template-icon {
         font-size: 16px;
         color: var(--vscode-descriptionForeground, #cccccc99);
