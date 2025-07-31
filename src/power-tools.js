@@ -881,8 +881,10 @@ class PowerToolsUI {
                   </button>
                 </div>
               </div>
-              <div class="templates-list" id="templates-list">
-                <!-- Templates will be populated here -->
+              <div class="templates-list-container">
+                <div class="templates-list" id="templates-list">
+                  <!-- Templates will be populated here -->
+                </div>
               </div>
             </div>
           </div>
@@ -997,7 +999,9 @@ class PowerToolsUI {
 
       .power-tools-modal-content {
         height: calc(90vh - 80px);
-        overflow: hidden;
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
       }
 
       .power-tools-tabs {
@@ -1030,8 +1034,10 @@ class PowerToolsUI {
 
       .power-tools-tab-content {
         padding: 20px;
-        height: calc(100% - 49px);
+        flex: 1;
         overflow-y: auto;
+        overflow-x: hidden;
+        max-height: calc(90vh - 129px);
       }
 
       .section-header {
@@ -1052,15 +1058,29 @@ class PowerToolsUI {
         display: flex;
         gap: 8px;
       }
+
+      .templates-section {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .templates-list-container {
+        flex: 1;
+        overflow: hidden;
+        margin-top: 10px;
+        position: relative;
+        border: 1px solid var(--vscode-widget-border, #454545);
+        border-radius: 4px;
+        background: var(--vscode-editor-background, #1e1e1e);
+      }
       .power-tools-tab-content h3 {
         color: #ffffff;
       }
       .preferences-section :nth-child(4).preference-item {
         display: none;
       }
-       .power-tools-form-content :nth-child(5).form-group {
-        display: none;
-       }
+       
       .power-tools-btn {
         background:  #0099cc;
         color: #ffffff;
@@ -1097,6 +1117,10 @@ class PowerToolsUI {
         display: flex;
         flex-direction: column;
         gap: 8px;
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 8px;
       }
 
       .template-item {
@@ -1228,6 +1252,43 @@ class PowerToolsUI {
       .preference-item input[type="checkbox"] {
         width: 16px;
         height: 16px;
+      }
+
+      /* Modal Scrollbar Styles */
+      .power-tools-tab-content::-webkit-scrollbar,
+      .templates-list::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .power-tools-tab-content::-webkit-scrollbar-track,
+      .templates-list::-webkit-scrollbar-track {
+        background: var(--vscode-editor-background, #1e1e1e);
+        border-radius: 4px;
+      }
+
+      .power-tools-tab-content::-webkit-scrollbar-thumb,
+      .templates-list::-webkit-scrollbar-thumb {
+        background-color: var(--vscode-scrollbarSlider-background, #4d4d4d);
+        border-radius: 4px;
+        border: 1px solid var(--vscode-editor-background, #1e1e1e);
+      }
+
+      .power-tools-tab-content::-webkit-scrollbar-thumb:hover,
+      .templates-list::-webkit-scrollbar-thumb:hover {
+        background-color: var(--vscode-scrollbarSlider-hoverBackground, #6b6b6b);
+      }
+
+      .power-tools-tab-content::-webkit-scrollbar-thumb:active,
+      .templates-list::-webkit-scrollbar-thumb:active {
+        background-color: var(--vscode-scrollbarSlider-activeBackground, #888888);
+      }
+
+      /* Firefox scrollbar styling for modal */
+      .power-tools-tab-content,
+      .templates-list {
+        scrollbar-width: thin;
+        scrollbar-color: var(--vscode-scrollbarSlider-background, #4d4d4d)
+          var(--vscode-editor-background, #1e1e1e);
       }
     `;
     
