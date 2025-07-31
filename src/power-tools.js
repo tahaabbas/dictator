@@ -14,6 +14,7 @@ class PowerToolsConfig {
   load() {
     return {
       templates: this.loadTemplates(),
+      categories: this.loadCategories(),
       preferences: this.loadPreferences()
     };
   }
@@ -97,6 +98,97 @@ class PowerToolsConfig {
     return templates;
   }
 
+  loadCategories() {
+    const categories = {};
+    
+    // Load factory categories
+    const factoryCategories = this.getSetting('powerTools.factoryCategories', this.getDefaultFactoryCategories());
+    console.log('[PowerTools] Loaded factory categories:', factoryCategories);
+    if (factoryCategories && typeof factoryCategories === 'object') {
+      Object.values(factoryCategories).forEach(category => {
+        if (category.enabled !== false) {
+          categories[category.id] = {
+            ...category,
+            isFactory: true
+          };
+        }
+      });
+    }
+    
+    // Load custom categories
+    const customCategories = this.getSetting('powerTools.customCategories', []);
+    console.log('[PowerTools] Loaded custom categories:', customCategories);
+    if (Array.isArray(customCategories)) {
+      customCategories.forEach(category => {
+        if (category.enabled !== false) {
+          categories[category.id] = {
+            ...category,
+            isFactory: false
+          };
+        }
+      });
+    }
+
+    console.log('[PowerTools] Final loaded categories:', categories);
+    console.log('[PowerTools] Category orders:', Object.values(categories).map(c => ({ id: c.id, name: c.name, order: c.order })));
+    return categories;
+  }
+
+  getDefaultFactoryCategories() {
+    return {
+      development: {
+        id: 'development',
+        name: 'Development',
+        emoji: '⚙️',
+        description: 'Code development and programming tasks',
+        color: '#007acc',
+        order: 0,
+        enabled: true,
+        isFactory: true
+      },
+      debugging: {
+        id: 'debugging',
+        name: 'Debugging',
+        emoji: '🐛',
+        description: 'Bug analysis and troubleshooting',
+        color: '#f14c4c',
+        order: 1,
+        enabled: true,
+        isFactory: true
+      },
+      documentation: {
+        id: 'documentation',
+        name: 'Documentation',
+        emoji: '📚',
+        description: 'Documentation and API reference',
+        color: '#22c55e',
+        order: 2,
+        enabled: true,
+        isFactory: true
+      },
+      learning: {
+        id: 'learning',
+        name: 'Learning',
+        emoji: '💡',
+        description: 'Code explanation and learning',
+        color: '#f59e0b',
+        order: 3,
+        enabled: true,
+        isFactory: true
+      },
+      general: {
+        id: 'general',
+        name: 'General',
+        emoji: '🔧',
+        description: 'General purpose templates',
+        color: '#6b7280',
+        order: 4,
+        enabled: true,
+        isFactory: true
+      }
+    };
+  }
+
   getDefaultFactoryTemplates() {
     return {
       testGeneration: {
@@ -108,6 +200,7 @@ class PowerToolsConfig {
         hotkey: 'cmd+shift+t',
         icon: 'codicon-beaker',
         autoSend: false,
+        order: 0,
         enabled: true,
         isFactory: true
       },
@@ -120,6 +213,7 @@ class PowerToolsConfig {
         hotkey: 'cmd+shift+b',
         icon: 'codicon-bug',
         autoSend: false,
+        order: 1,
         enabled: true,
         isFactory: true
       },
@@ -132,6 +226,7 @@ class PowerToolsConfig {
         hotkey: 'cmd+shift+d',
         icon: 'codicon-book',
         autoSend: false,
+        order: 2,
         enabled: true,
         isFactory: true
       },
@@ -144,6 +239,7 @@ class PowerToolsConfig {
         hotkey: '',
         icon: 'codicon-eye',
         autoSend: false,
+        order: 3,
         enabled: true,
         isFactory: true
       },
@@ -156,6 +252,7 @@ class PowerToolsConfig {
         hotkey: '',
         icon: 'codicon-sync',
         autoSend: false,
+        order: 4,
         enabled: true,
         isFactory: true
       },
@@ -168,6 +265,7 @@ class PowerToolsConfig {
         hotkey: '',
         icon: 'codicon-lightbulb',
         autoSend: false,
+        order: 5,
         enabled: true,
         isFactory: true
       }
@@ -314,7 +412,6 @@ class PowerToolsUI {
       }
 
       .power-tools-menu-category {
-        padding: 4px 12px 2px 12px;
         font-weight: 500;
         font-size: 10px;
         color: var(--vscode-descriptionForeground, #888);
@@ -323,6 +420,8 @@ class PowerToolsUI {
         margin-top: 6px;
         margin-bottom: 1px;
         pointer-events: none;
+        background-color: #1b1b1bde;
+        padding: 5px 8px;
       }
 
       .power-tools-menu-item {
@@ -391,6 +490,8 @@ class PowerToolsUI {
         background-color: var(--vscode-menu-separatorBackground, #454545);
         margin: 8px 0;
       }
+
+
 
       /* Settings Button */
       .power-tools-settings-item {
@@ -516,23 +617,26 @@ class PowerToolsUI {
     header.innerHTML = `⚡ Power Tools`;
     menu.appendChild(header);
     
-    // Group templates by category if enabled
-    const groupedTemplates = this.groupTemplatesByCategory(templates);
+    // Get structured menu items with proper category ordering
+    const menuItems = this.createContextMenuWithCategories(templates, preferences);
     
-    Object.entries(groupedTemplates).forEach(([category, categoryTemplates]) => {
-      if (preferences.groupByCategory && Object.keys(groupedTemplates).length > 1) {
+    menuItems.forEach(item => {
+      if (item.type === 'category-header') {
         const categoryHeader = document.createElement('div');
         categoryHeader.className = 'power-tools-menu-category';
-        categoryHeader.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+        categoryHeader.innerHTML = `
+          <span style="color: ${item.category.color};">${item.category.emoji}</span>
+          ${item.category.name}
+        `;
         menu.appendChild(categoryHeader);
-      }
-      
-      categoryTemplates.forEach(template => {
-        const item = document.createElement('div');
-        item.className = 'power-tools-menu-item';
-        item.dataset.templateId = template.id;
         
-        item.innerHTML = `
+      } else if (item.type === 'template') {
+        const template = item.template;
+        const menuItem = document.createElement('div');
+        menuItem.className = 'power-tools-menu-item';
+        menuItem.dataset.templateId = template.id;
+        
+        menuItem.innerHTML = `
           <div class="power-tools-menu-item-icon">
             <span class="codicon ${template.icon || 'codicon-symbol-method'}"></span>
           </div>
@@ -544,9 +648,9 @@ class PowerToolsUI {
             `<div class="power-tools-menu-item-hotkey">${template.hotkey}</div>` : ''}
         `;
         
-        item.addEventListener('click', (e) => this.executeTemplate(template));
-        menu.appendChild(item);
-      });
+        menuItem.addEventListener('click', (e) => this.executeTemplate(template));
+        menu.appendChild(menuItem);
+      }
     });
     
     // Settings item
@@ -591,12 +695,85 @@ class PowerToolsUI {
       grouped[category].push(template);
     });
     
-    // Sort templates within each category
+    // Sort templates within each category by order first, then by name
     Object.keys(grouped).forEach(category => {
-      grouped[category].sort((a, b) => a.name.localeCompare(b.name));
+      grouped[category].sort((a, b) => {
+        const orderA = a.order !== undefined ? a.order : 9999;
+        const orderB = b.order !== undefined ? b.order : 9999;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return (a.displayName || a.name).localeCompare(b.displayName || b.name);
+      });
     });
     
     return grouped;
+  }
+
+  createContextMenuWithCategories(templates, preferences) {
+    const config = this.config.load();
+    const categories = config.categories;
+    
+    // Group templates by category
+    const groupedTemplates = this.groupTemplatesByCategory(templates);
+    
+    // Sort categories by their order
+    const sortedCategoryIds = Object.keys(categories).sort((a, b) => {
+      const catA = categories[a];
+      const catB = categories[b];
+      const orderA = catA?.order !== undefined ? catA.order : 9999;
+      const orderB = catB?.order !== undefined ? catB.order : 9999;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return (catA?.name || a).localeCompare(catB?.name || b);
+    });
+
+    console.log('[PowerTools] Category order for context menu:', sortedCategoryIds.map(id => ({ 
+      id, 
+      name: categories[id]?.name, 
+      order: categories[id]?.order 
+    })));
+
+    const menuItems = [];
+
+    sortedCategoryIds.forEach(categoryId => {
+      const category = categories[categoryId];
+      const categoryTemplates = groupedTemplates[categoryId] || [];
+      
+      if (!category) return;
+
+      // Skip empty categories in context menu - they should only show in template manager
+      if (categoryTemplates.length === 0) {
+        console.log(`[PowerTools] Skipping empty category ${categoryId} from context menu`);
+        return;
+      }
+
+      // Add category header if grouping is enabled and there are multiple categories with templates
+      const categoriesWithTemplates = sortedCategoryIds.filter(id => {
+        const templates = groupedTemplates[id] || [];
+        return templates.length > 0;
+      });
+      
+      if (preferences.groupByCategory && categoriesWithTemplates.length > 1) {
+        menuItems.push({
+          type: 'category-header',
+          category: category,
+          text: category.name
+        });
+      }
+
+      // Add templates in this category
+      categoryTemplates.forEach(template => {
+        menuItems.push({
+          type: 'template',
+          template: template,
+          category: category
+        });
+      });
+    });
+
+    return menuItems;
   }
 
   positionContextMenu(menu, targetElement) {
@@ -865,6 +1042,7 @@ class PowerToolsUI {
         <div class="power-tools-modal-content">
           <div class="power-tools-tabs">
             <button class="power-tools-tab active" data-tab="templates">Templates</button>
+            <button class="power-tools-tab" data-tab="categories">Categories</button>
             <button class="power-tools-tab" data-tab="preferences">Preferences</button>
           </div>
           
@@ -884,6 +1062,27 @@ class PowerToolsUI {
               <div class="templates-list-container">
                 <div class="templates-list" id="templates-list">
                   <!-- Templates will be populated here -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="power-tools-tab-content" id="categories-tab" style="display: none;">
+            <div class="categories-section">
+              <div class="section-header">
+                <h3>Category Management</h3>
+                <div class="template-actions">
+                  <button class="power-tools-btn primary" id="add-category-btn">
+                    <span class="codicon codicon-add"></span> Add Category
+                  </button>
+                  <button class="power-tools-btn secondary" id="restore-category-defaults-btn">
+                    <span class="codicon codicon-refresh"></span> Restore Defaults
+                  </button>
+                </div>
+              </div>
+              <div class="categories-list-container">
+                <div class="categories-list" id="categories-list">
+                  <!-- Categories will be populated here -->
                 </div>
               </div>
             </div>
@@ -928,8 +1127,9 @@ class PowerToolsUI {
     // Add to document
     document.body.appendChild(modal);
     
-    // Populate templates
+    // Populate templates and categories
     this.populateTemplatesList(templates);
+    this.populateCategoriesList(config.categories);
     
     // Setup event listeners
     this.setupModalEventListeners(modal, config);
@@ -1059,13 +1259,15 @@ class PowerToolsUI {
         gap: 8px;
       }
 
-      .templates-section {
+      .templates-section,
+      .categories-section {
         display: flex;
         flex-direction: column;
         height: 100%;
       }
 
-      .templates-list-container {
+      .templates-list-container,
+      .categories-list-container {
         flex: 1;
         overflow: hidden;
         margin-top: 10px;
@@ -1113,7 +1315,8 @@ class PowerToolsUI {
         background: var(--vscode-button-secondaryHoverBackground, #454545);
       }
 
-      .templates-list {
+      .templates-list,
+      .categories-list {
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -1140,6 +1343,59 @@ class PowerToolsUI {
 
       .template-item:last-child {
         margin-bottom: 17px;
+      }
+
+      .template-item[draggable="true"] {
+        cursor: grab;
+      }
+
+      .template-item.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+        transform: rotate(2deg);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      }
+
+      .template-item.drag-over {
+        border-color: var(--vscode-focusBorder, #007acc);
+        background: var(--vscode-list-hoverBackground, #2a2d2e);
+        transform: translateY(-2px);
+      }
+
+      .template-drag-handle {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--vscode-descriptionForeground, #888);
+        cursor: grab;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+        margin-right: 8px;
+        flex-shrink: 0;
+      }
+
+      .template-drag-handle:hover {
+        opacity: 1;
+        color: var(--vscode-foreground, #cccccc);
+      }
+
+      .template-item:hover .template-drag-handle {
+        opacity: 1;
+      }
+
+      .drag-placeholder {
+        height: 2px;
+        background: var(--vscode-focusBorder, #007acc);
+        margin: 4px 0;
+        border-radius: 1px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .drag-placeholder.active {
+        opacity: 1;
       }
 
       .template-icon {
@@ -1183,6 +1439,195 @@ class PowerToolsUI {
         padding: 2px 6px;
         border-radius: 3px;
         font-size: 10px !important;
+      }
+
+      /* Category Item Styles */
+      .category-item {
+        background: var(--vscode-editorWidget-background, #252526);
+        border: 1px solid var(--vscode-widget-border, #454545);
+        border-radius: 4px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: border-color 0.1s ease;
+        position: relative;
+      }
+
+      /* Template Category Group Styles */
+      .template-category-group {
+        margin-bottom: 20px;
+      }
+
+      .template-category-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: var(--vscode-titleBar-activeBackground, #252526);
+        border: 1px solid var(--vscode-widget-border, #454545);
+        border-radius: 4px;
+        margin-bottom: 8px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .template-category-icon {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+
+      .template-category-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--vscode-editor-foreground, #cccccc);
+        flex: 1;
+      }
+
+      .template-category-count {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground, #888);
+        background: var(--vscode-badge-background, #4d4d4d);
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 16px;
+        text-align: center;
+      }
+
+      .template-category-templates {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-left: 8px;
+        border-left: 2px solid transparent;
+        transition: border-color 0.2s ease;
+        min-height: 40px;
+        position: relative;
+      }
+
+      .template-category-templates.drag-over-category {
+        border-left-color: var(--vscode-focusBorder, #007acc);
+        background: rgba(0, 122, 204, 0.05);
+      }
+
+      .template-category-templates.empty {
+        padding: 16px;
+        text-align: center;
+        color: var(--vscode-descriptionForeground, #888);
+        font-style: italic;
+        border: 1px dashed var(--vscode-widget-border, #454545);
+        border-radius: 4px;
+      }
+
+      .template-category-templates.empty::after {
+        content: "Drop templates here";
+        font-size: 11px;
+      }
+
+      .category-item:hover {
+        border-color: var(--vscode-focusBorder, #007acc);
+      }
+
+      .category-item:last-child {
+        margin-bottom: 17px;
+      }
+
+      .category-item[draggable="true"] {
+        cursor: grab;
+      }
+
+      .category-item.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+        transform: rotate(1deg);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      }
+
+      .category-item.drag-over {
+        border-color: var(--vscode-focusBorder, #007acc);
+        background: var(--vscode-list-hoverBackground, #2a2d2e);
+        transform: translateY(-2px);
+      }
+
+      .category-drag-handle {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--vscode-descriptionForeground, #888);
+        cursor: grab;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+        margin-right: 8px;
+        flex-shrink: 0;
+      }
+
+      .category-drag-handle:hover {
+        opacity: 1;
+        color: var(--vscode-foreground, #cccccc);
+      }
+
+      .category-item:hover .category-drag-handle {
+        opacity: 1;
+      }
+
+      .category-icon {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+        border-radius: 4px;
+        position: relative;
+      }
+
+      .category-info {
+        flex: 1;
+      }
+
+      .category-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--vscode-editor-foreground, #cccccc);
+        margin-bottom: 2px;
+        line-height: 1.3;
+      }
+
+      .category-description {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground, #cccccc99);
+        line-height: 1.2;
+      }
+
+      .category-badge {
+        background: #134103;
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .category-badge.factory {
+        background-color: transparent;
+        color: #ffffff;
+      }
+
+      .category-actions-btns {
+        display: flex;
+        gap: 4px;
       }
 
       .template-actions-btns {
@@ -1260,36 +1705,42 @@ class PowerToolsUI {
 
       /* Modal Scrollbar Styles */
       .power-tools-tab-content::-webkit-scrollbar,
-      .templates-list::-webkit-scrollbar {
+      .templates-list::-webkit-scrollbar,
+      .categories-list::-webkit-scrollbar {
         width: 8px;
       }
 
       .power-tools-tab-content::-webkit-scrollbar-track,
-      .templates-list::-webkit-scrollbar-track {
+      .templates-list::-webkit-scrollbar-track,
+      .categories-list::-webkit-scrollbar-track {
         background: var(--vscode-editor-background, #1e1e1e);
         border-radius: 4px;
       }
 
       .power-tools-tab-content::-webkit-scrollbar-thumb,
-      .templates-list::-webkit-scrollbar-thumb {
+      .templates-list::-webkit-scrollbar-thumb,
+      .categories-list::-webkit-scrollbar-thumb {
         background-color: var(--vscode-scrollbarSlider-background, #4d4d4d);
         border-radius: 4px;
         border: 1px solid var(--vscode-editor-background, #1e1e1e);
       }
 
       .power-tools-tab-content::-webkit-scrollbar-thumb:hover,
-      .templates-list::-webkit-scrollbar-thumb:hover {
+      .templates-list::-webkit-scrollbar-thumb:hover,
+      .categories-list::-webkit-scrollbar-thumb:hover {
         background-color: var(--vscode-scrollbarSlider-hoverBackground, #6b6b6b);
       }
 
       .power-tools-tab-content::-webkit-scrollbar-thumb:active,
-      .templates-list::-webkit-scrollbar-thumb:active {
+      .templates-list::-webkit-scrollbar-thumb:active,
+      .categories-list::-webkit-scrollbar-thumb:active {
         background-color: var(--vscode-scrollbarSlider-activeBackground, #888888);
       }
 
       /* Firefox scrollbar styling for modal */
       .power-tools-tab-content,
-      .templates-list {
+      .templates-list,
+      .categories-list {
         scrollbar-width: thin;
         scrollbar-color: var(--vscode-scrollbarSlider-background, #4d4d4d)
           var(--vscode-editor-background, #1e1e1e);
@@ -1305,42 +1756,545 @@ class PowerToolsUI {
     
     listContainer.innerHTML = '';
     
-    Object.values(templates).forEach(template => {
-      const item = document.createElement('div');
-      item.className = 'template-item';
+    const config = this.config.load();
+    const categories = config.categories;
+    
+    console.log('[PowerTools] Populating templates list with categories:', Object.keys(categories));
+    
+    // Group templates by category and sort categories by order
+    const groupedTemplates = this.groupTemplatesByCategory(templates);
+    const sortedCategories = Object.keys(categories).sort((a, b) => {
+      const catA = categories[a];
+      const catB = categories[b];
+      const orderA = catA?.order !== undefined ? catA.order : 9999;
+      const orderB = catB?.order !== undefined ? catB.order : 9999;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return (catA?.name || a).localeCompare(catB?.name || b);
+    });
+    
+    console.log('[PowerTools] Category order for template manager:', sortedCategories.map(id => ({ 
+      id, 
+      name: categories[id]?.name, 
+      order: categories[id]?.order 
+    })));
+    
+    // Render each category section
+    sortedCategories.forEach(categoryId => {
+      const category = categories[categoryId];
+      const categoryTemplates = groupedTemplates[categoryId] || [];
       
-      const actionsHtml = template.isFactory 
-        ? `<button class="template-action-btn" data-action="edit" data-template-id="${template.id}">
+      if (!category) return;
+      
+      // Create category group container
+      const categoryGroup = document.createElement('div');
+      categoryGroup.className = 'template-category-group';
+      categoryGroup.dataset.categoryId = categoryId;
+      
+      // Create category header
+      const categoryHeader = document.createElement('div');
+      categoryHeader.className = 'template-category-header';
+      categoryHeader.innerHTML = `
+        <div class="template-category-icon" style="background-color: ${category.color}20; color: ${category.color};">
+          ${category.emoji}
+        </div>
+        <div class="template-category-name">${category.name}</div>
+        <div class="template-category-count">${categoryTemplates.length}</div>
+      `;
+      
+      // Create templates container
+      const templatesContainer = document.createElement('div');
+      templatesContainer.className = `template-category-templates ${categoryTemplates.length === 0 ? 'empty' : ''}`;
+      templatesContainer.dataset.categoryId = categoryId;
+      
+      // Add templates to the container
+      categoryTemplates.forEach((template, index) => {
+        const item = document.createElement('div');
+        item.className = 'template-item';
+        item.draggable = true;
+        item.dataset.templateId = template.id;
+        item.dataset.categoryId = categoryId;
+        item.dataset.index = index;
+        
+        const actionsHtml = template.isFactory 
+          ? `<button class="template-action-btn" data-action="edit" data-template-id="${template.id}">
+               <span class="codicon codicon-edit"></span> Edit
+             </button>`
+          : `<button class="template-action-btn" data-action="edit" data-template-id="${template.id}">
+               <span class="codicon codicon-edit"></span> Edit
+             </button>
+             <button class="template-action-btn delete" data-action="delete" data-template-id="${template.id}">
+               <span class="codicon codicon-trash"></span> Delete
+             </button>`;
+        
+        item.innerHTML = `
+          <div class="template-drag-handle" title="Drag to reorder or move between categories">
+            <span class="codicon codicon-gripper"></span>
+          </div>
+          <div class="template-icon">
+            <span class="codicon ${template.icon || 'codicon-symbol-method'}"></span>
+          </div>
+          <div class="template-info">
+            <div class="template-name">${template.emoji || ''} ${template.displayName || template.name}</div>
+            <div class="template-description">${template.description}</div>
+            <div class="template-meta">
+              <span>Category: ${category.name}</span>
+              ${template.hotkey ? `<span>Hotkey: ${template.hotkey}</span>` : ''}
+              ${template.autoSend ? `<span class="auto-send-indicator">⚡ Auto-Send</span>` : ''}
+            </div>
+          </div>
+          <div class="template-badge ${template.isFactory ? 'factory' : ''}">${template.isFactory ? 'Factory' : 'Custom'}</div>
+          <div class="template-actions-btns">
+            ${actionsHtml}
+          </div>
+        `;
+        
+        templatesContainer.appendChild(item);
+      });
+      
+      // Assemble category group
+      categoryGroup.appendChild(categoryHeader);
+      categoryGroup.appendChild(templatesContainer);
+      listContainer.appendChild(categoryGroup);
+    });
+    
+    // Setup enhanced drag and drop event listeners
+    this.setupEnhancedDragAndDrop(listContainer);
+  }
+
+  populateCategoriesList(categories) {
+    const listContainer = document.getElementById('categories-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    
+    // Sort categories by order (if available), then by name
+    const sortedCategories = Object.values(categories).sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 9999;
+      const orderB = b.order !== undefined ? b.order : 9999;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.name.localeCompare(b.name);
+    });
+    
+    sortedCategories.forEach((category, index) => {
+      const item = document.createElement('div');
+      item.className = 'category-item';
+      item.draggable = true;
+      item.dataset.categoryId = category.id;
+      item.dataset.index = index;
+      
+      const actionsHtml = category.isFactory 
+        ? `<button class="template-action-btn" data-action="edit" data-category-id="${category.id}">
              <span class="codicon codicon-edit"></span> Edit
            </button>`
-        : `<button class="template-action-btn" data-action="edit" data-template-id="${template.id}">
+        : `<button class="template-action-btn" data-action="edit" data-category-id="${category.id}">
              <span class="codicon codicon-edit"></span> Edit
            </button>
-           <button class="template-action-btn delete" data-action="delete" data-template-id="${template.id}">
+           <button class="template-action-btn delete" data-action="delete" data-category-id="${category.id}">
              <span class="codicon codicon-trash"></span> Delete
            </button>`;
       
       item.innerHTML = `
-        <div class="template-icon">
-          <span class="codicon ${template.icon || 'codicon-symbol-method'}"></span>
+        <div class="category-drag-handle" title="Drag to reorder">
+          <span class="codicon codicon-gripper"></span>
         </div>
-        <div class="template-info">
-          <div class="template-name">${template.emoji || ''} ${template.displayName || template.name}</div>
-          <div class="template-description">${template.description}</div>
-          <div class="template-meta">
-            <span>Category: ${template.category}</span>
-            ${template.hotkey ? `<span>Hotkey: ${template.hotkey}</span>` : ''}
-            ${template.autoSend ? `<span class="auto-send-indicator">⚡ Auto-Send</span>` : ''}
-          </div>
+        <div class="category-icon" style="background-color: ${category.color}20; color: ${category.color};">
+          ${category.emoji}
         </div>
-        <div class="template-badge ${template.isFactory ? 'factory' : ''}">${template.isFactory ? 'Factory' : 'Custom'}</div>
-        <div class="template-actions-btns">
+        <div class="category-info">
+          <div class="category-name">${category.emoji} ${category.name}</div>
+          <div class="category-description">${category.description}</div>
+        </div>
+        <div class="category-badge ${category.isFactory ? 'factory' : ''}">${category.isFactory ? 'Factory' : 'Custom'}</div>
+        <div class="category-actions-btns">
           ${actionsHtml}
         </div>
       `;
       
       listContainer.appendChild(item);
     });
+    
+    // Setup drag and drop event listeners for categories
+    this.setupCategoryDragAndDrop(listContainer);
+  }
+
+  setupEnhancedDragAndDrop(listContainer) {
+    let draggedElement = null;
+    let draggedOverElement = null;
+    let draggedOverCategory = null;
+
+    listContainer.addEventListener('dragstart', (e) => {
+      const templateItem = e.target.closest('.template-item');
+      if (!templateItem) return;
+      
+      draggedElement = templateItem;
+      templateItem.classList.add('dragging');
+      
+      // Set drag data
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', templateItem.outerHTML);
+      e.dataTransfer.setData('text/plain', templateItem.dataset.templateId);
+      
+      console.log('[PowerTools] Drag started for template:', templateItem.dataset.templateId);
+    });
+
+    listContainer.addEventListener('dragend', (e) => {
+      const templateItem = e.target.closest('.template-item');
+      if (templateItem) {
+        templateItem.classList.remove('dragging');
+      }
+      
+      // Clean up drag over effects
+      listContainer.querySelectorAll('.template-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      listContainer.querySelectorAll('.template-category-templates').forEach(container => {
+        container.classList.remove('drag-over-category');
+      });
+      
+      console.log('[PowerTools] Drag ended, cleaning up');
+      
+      draggedElement = null;
+      draggedOverElement = null;
+      draggedOverCategory = null;
+    });
+
+    listContainer.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      // Check if dragging over a template item
+      const targetItem = e.target.closest('.template-item');
+      const targetCategoryContainer = e.target.closest('.template-category-templates');
+      
+      // Clear previous effects
+      listContainer.querySelectorAll('.template-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      listContainer.querySelectorAll('.template-category-templates').forEach(container => {
+        container.classList.remove('drag-over-category');
+      });
+      
+      if (targetItem && targetItem !== draggedElement) {
+        // Dragging over a specific template
+        targetItem.classList.add('drag-over');
+        draggedOverElement = targetItem;
+        draggedOverCategory = null;
+      } else if (targetCategoryContainer && !targetItem) {
+        // Dragging over empty category space
+        targetCategoryContainer.classList.add('drag-over-category');
+        draggedOverElement = null;
+        draggedOverCategory = targetCategoryContainer;
+      }
+    });
+
+    listContainer.addEventListener('drop', (e) => {
+      e.preventDefault();
+      
+      if (!draggedElement) return;
+      
+      const draggedTemplateId = draggedElement.dataset.templateId;
+      const draggedCategoryId = draggedElement.dataset.categoryId;
+      
+      if (draggedOverElement && draggedOverElement !== draggedElement) {
+        // Dropping on another template - reorder within category or move between categories
+        const targetCategoryId = draggedOverElement.dataset.categoryId;
+        const targetContainer = draggedOverElement.closest('.template-category-templates');
+        
+        // Get templates in target category
+        const categoryItems = Array.from(targetContainer.querySelectorAll('.template-item'));
+        const targetIndex = categoryItems.indexOf(draggedOverElement);
+        
+        // Remove from current position
+        draggedElement.remove();
+        
+        // Insert at new position
+        if (targetIndex === categoryItems.length - 1) {
+          targetContainer.appendChild(draggedElement);
+        } else {
+          targetContainer.insertBefore(draggedElement, draggedOverElement);
+        }
+        
+        // Update category if different
+        if (draggedCategoryId !== targetCategoryId) {
+          this.moveTemplateToCategory(draggedTemplateId, targetCategoryId);
+        }
+        
+        this.saveTemplateOrder();
+        
+      } else if (draggedOverCategory) {
+        // Dropping on empty category space
+        const targetCategoryId = draggedOverCategory.dataset.categoryId;
+        
+        // Remove from current position
+        draggedElement.remove();
+        
+        // Add to new category
+        draggedOverCategory.appendChild(draggedElement);
+        draggedOverCategory.classList.remove('empty');
+        
+        // Update category if different
+        if (draggedCategoryId !== targetCategoryId) {
+          this.moveTemplateToCategory(draggedTemplateId, targetCategoryId);
+        }
+        
+        this.saveTemplateOrder();
+      }
+      
+      // Refresh the display to update category counts and empty states
+      setTimeout(() => {
+        const config = this.config.load();
+        this.populateTemplatesList(config.templates);
+      }, 100);
+    });
+
+    listContainer.addEventListener('dragleave', (e) => {
+      const targetItem = e.target.closest('.template-item');
+      const targetContainer = e.target.closest('.template-category-templates');
+      
+      if (targetItem) {
+        targetItem.classList.remove('drag-over');
+      }
+      if (targetContainer && !listContainer.contains(e.relatedTarget)) {
+        targetContainer.classList.remove('drag-over-category');
+      }
+    });
+  }
+
+  moveTemplateToCategory(templateId, newCategoryId) {
+    try {
+      const config = this.config.load();
+      const template = config.templates[templateId];
+      
+      if (!template) {
+        console.warn('[PowerTools] Template not found:', templateId);
+        return;
+      }
+      
+      console.log(`[PowerTools] Moving template "${template.name}" from "${template.category}" to "${newCategoryId}"`);
+      
+      // Update template category
+      template.category = newCategoryId;
+      
+      // Save to appropriate storage
+      if (template.isFactory) {
+        const factoryTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.factoryTemplates') || '{}');
+        const factoryKey = Object.keys(factoryTemplates).find(key => factoryTemplates[key].id === templateId);
+        if (factoryKey) {
+          factoryTemplates[factoryKey].category = newCategoryId;
+          localStorage.setItem('dictator.powerTools.factoryTemplates', JSON.stringify(factoryTemplates));
+        }
+      } else {
+        const customTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.customTemplates') || '[]');
+        const customIndex = customTemplates.findIndex(t => t.id === templateId);
+        if (customIndex >= 0) {
+          customTemplates[customIndex].category = newCategoryId;
+          localStorage.setItem('dictator.powerTools.customTemplates', JSON.stringify(customTemplates));
+        }
+      }
+      
+      // Update DOM data attributes
+      const templateElement = document.querySelector(`[data-template-id="${templateId}"]`);
+      if (templateElement) {
+        templateElement.dataset.categoryId = newCategoryId;
+      }
+      
+      console.log('[PowerTools] Template category updated successfully');
+      
+    } catch (error) {
+      console.error('[PowerTools] Failed to move template to category:', error);
+    }
+  }
+
+  saveTemplateOrder() {
+    const listContainer = document.getElementById('templates-list');
+    if (!listContainer) return;
+    
+    console.log('[PowerTools] Saving template order...');
+    
+    // Get all category groups and process templates within each category
+    const categoryGroups = Array.from(listContainer.querySelectorAll('.template-category-group'));
+    const config = this.config.load();
+    const templates = config.templates;
+    
+    let globalOrder = 0;
+    
+    categoryGroups.forEach(categoryGroup => {
+      const categoryId = categoryGroup.dataset.categoryId;
+      const categoryTemplates = Array.from(categoryGroup.querySelectorAll('.template-item'));
+      
+      console.log(`[PowerTools] Processing category ${categoryId} with ${categoryTemplates.length} templates`);
+      
+      categoryTemplates.forEach((item, categoryIndex) => {
+        const templateId = item.dataset.templateId;
+        const template = templates[templateId];
+        if (template) {
+          template.order = globalOrder++;
+          
+          console.log(`[PowerTools] Setting template ${templateId} order to ${template.order}`);
+          
+          // Save to appropriate storage
+          if (template.isFactory) {
+            const factoryTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.factoryTemplates') || '{}');
+            const factoryKey = Object.keys(factoryTemplates).find(key => factoryTemplates[key].id === templateId);
+            if (factoryKey) {
+              factoryTemplates[factoryKey].order = template.order;
+              localStorage.setItem('dictator.powerTools.factoryTemplates', JSON.stringify(factoryTemplates));
+            }
+          } else {
+            const customTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.customTemplates') || '[]');
+            const customIndex = customTemplates.findIndex(t => t.id === templateId);
+            if (customIndex >= 0) {
+              customTemplates[customIndex].order = template.order;
+              localStorage.setItem('dictator.powerTools.customTemplates', JSON.stringify(customTemplates));
+            }
+          }
+        }
+      });
+    });
+    
+    console.log('[PowerTools] Template order saved');
+    
+    // Refresh context menu order
+    this.registerHotkeys();
+  }
+
+  setupCategoryDragAndDrop(listContainer) {
+    let draggedElement = null;
+    let draggedOverElement = null;
+
+    listContainer.addEventListener('dragstart', (e) => {
+      if (!e.target.classList.contains('category-item')) return;
+      
+      draggedElement = e.target;
+      e.target.classList.add('dragging');
+      
+      // Set drag data
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', e.target.outerHTML);
+      e.dataTransfer.setData('text/plain', e.target.dataset.categoryId);
+    });
+
+    listContainer.addEventListener('dragend', (e) => {
+      if (e.target.classList.contains('category-item')) {
+        e.target.classList.remove('dragging');
+      }
+      
+      // Clean up drag over effects
+      listContainer.querySelectorAll('.category-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      
+      draggedElement = null;
+      draggedOverElement = null;
+    });
+
+    listContainer.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      const targetItem = e.target.closest('.category-item');
+      if (!targetItem || targetItem === draggedElement) return;
+      
+      // Remove previous drag-over effects
+      listContainer.querySelectorAll('.category-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      
+      // Add drag-over effect to current target
+      targetItem.classList.add('drag-over');
+      draggedOverElement = targetItem;
+    });
+
+    listContainer.addEventListener('drop', (e) => {
+      e.preventDefault();
+      
+      if (!draggedElement || !draggedOverElement || draggedElement === draggedOverElement) {
+        return;
+      }
+      
+      // Get all category items
+      const items = Array.from(listContainer.querySelectorAll('.category-item'));
+      const draggedIndex = items.indexOf(draggedElement);
+      const targetIndex = items.indexOf(draggedOverElement);
+      
+      // Reorder in DOM
+      if (draggedIndex < targetIndex) {
+        draggedOverElement.parentNode.insertBefore(draggedElement, draggedOverElement.nextSibling);
+      } else {
+        draggedOverElement.parentNode.insertBefore(draggedElement, draggedOverElement);
+      }
+      
+      // Save new order
+      this.saveCategoryOrder();
+      
+      console.log('[PowerTools] Category order updated');
+    });
+
+    listContainer.addEventListener('dragleave', (e) => {
+      const targetItem = e.target.closest('.category-item');
+      if (targetItem) {
+        targetItem.classList.remove('drag-over');
+      }
+    });
+  }
+
+  saveCategoryOrder() {
+    const listContainer = document.getElementById('categories-list');
+    if (!listContainer) return;
+    
+    console.log('[PowerTools] Saving category order...');
+    
+    const items = Array.from(listContainer.querySelectorAll('.category-item'));
+    const config = this.config.load();
+    const categories = config.categories;
+    
+    console.log('[PowerTools] Categories to reorder:', Object.keys(categories));
+    
+    // Update order for all categories
+    items.forEach((item, index) => {
+      const categoryId = item.dataset.categoryId;
+      const category = categories[categoryId];
+      if (category) {
+        console.log(`[PowerTools] Setting category ${categoryId} order to ${index} (was ${category.order})`);
+        category.order = index;
+        
+        // Save to appropriate storage
+        if (category.isFactory) {
+          let factoryCategories = JSON.parse(localStorage.getItem('dictator.powerTools.factoryCategories') || '{}');
+          
+          // If no factory categories saved yet, initialize with defaults
+          if (Object.keys(factoryCategories).length === 0) {
+            factoryCategories = this.config.getDefaultFactoryCategories();
+          }
+          
+          // Update the specific category
+          if (factoryCategories[categoryId]) {
+            factoryCategories[categoryId].order = index;
+            localStorage.setItem('dictator.powerTools.factoryCategories', JSON.stringify(factoryCategories));
+            console.log(`[PowerTools] Saved factory category ${categoryId} with order ${index}`);
+          }
+        } else {
+          const customCategories = JSON.parse(localStorage.getItem('dictator.powerTools.customCategories') || '[]');
+          const customIndex = customCategories.findIndex(c => c.id === categoryId);
+          if (customIndex >= 0) {
+            customCategories[customIndex].order = index;
+            localStorage.setItem('dictator.powerTools.customCategories', JSON.stringify(customCategories));
+            console.log(`[PowerTools] Saved custom category ${categoryId} with order ${index}`);
+          }
+        }
+      }
+    });
+    
+    // Refresh context menu order and templates list
+    this.registerHotkeys();
+    
+    // Also refresh templates list to show updated category order
+    const updatedConfig = this.config.load();
+    this.populateTemplatesList(updatedConfig.templates);
   }
 
   setupModalEventListeners(modal, config) {
@@ -1386,18 +2340,37 @@ class PowerToolsUI {
     const restoreBtn = modal.querySelector('#restore-defaults-btn');
     restoreBtn?.addEventListener('click', () => this.showRestoreDefaultsDialog(modal));
     
-    // Template action buttons
+    // Add category button
+    const addCategoryBtn = modal.querySelector('#add-category-btn');
+    addCategoryBtn?.addEventListener('click', () => this.showAddCategoryDialog(modal));
+    
+    // Restore category defaults button
+    const restoreCategoryBtn = modal.querySelector('#restore-category-defaults-btn');
+    restoreCategoryBtn?.addEventListener('click', () => this.showRestoreCategoryDefaultsDialog(modal));
+    
+    // Template and Category action buttons
     modal.addEventListener('click', (e) => {
       const actionBtn = e.target.closest('.template-action-btn');
       if (!actionBtn) return;
       
       const action = actionBtn.dataset.action;
       const templateId = actionBtn.dataset.templateId;
+      const categoryId = actionBtn.dataset.categoryId;
       
-      if (action === 'edit') {
-        this.showEditTemplateDialog(modal, templateId);
-      } else if (action === 'delete') {
-        this.showDeleteTemplateDialog(modal, templateId);
+      if (templateId) {
+        // Template actions
+        if (action === 'edit') {
+          this.showEditTemplateDialog(modal, templateId);
+        } else if (action === 'delete') {
+          this.showDeleteTemplateDialog(modal, templateId);
+        }
+      } else if (categoryId) {
+        // Category actions
+        if (action === 'edit') {
+          this.showEditCategoryDialog(modal, categoryId);
+        } else if (action === 'delete') {
+          this.showDeleteCategoryDialog(modal, categoryId);
+        }
       }
     });
     
@@ -1461,11 +2434,7 @@ class PowerToolsUI {
             <div class="form-group">
               <label for="template-category">Category</label>
               <select id="template-category">
-                <option value="development" ${template?.category === 'development' ? 'selected' : ''}>⚙️ Development</option>
-                <option value="debugging" ${template?.category === 'debugging' ? 'selected' : ''}>🐛 Debugging</option>
-                <option value="documentation" ${template?.category === 'documentation' ? 'selected' : ''}>📚 Documentation</option>
-                <option value="learning" ${template?.category === 'learning' ? 'selected' : ''}>💡 Learning</option>
-                <option value="general" ${template?.category === 'general' ? 'selected' : ''}>🔧 General</option>
+                ${this.generateCategoryOptions(template?.category)}
               </select>
             </div>
             
@@ -1525,6 +2494,26 @@ class PowerToolsUI {
     
     // Setup form event listeners
     this.setupFormEventListeners(formOverlay, parentModal, template, isEdit);
+  }
+
+  generateCategoryOptions(selectedCategory) {
+    const config = this.config.load();
+    const categories = config.categories;
+    
+    // Sort categories by order
+    const sortedCategories = Object.values(categories).sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 9999;
+      const orderB = b.order !== undefined ? b.order : 9999;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.name.localeCompare(b.name);
+    });
+    
+    return sortedCategories.map(category => {
+      const isSelected = selectedCategory === category.id ? 'selected' : '';
+      return `<option value="${category.id}" ${isSelected}>${category.emoji} ${category.name}</option>`;
+    }).join('');
   }
 
   addFormStyles() {
@@ -1658,6 +2647,28 @@ class PowerToolsUI {
         color: var(--vscode-descriptionForeground, #cccccc99);
         margin-top: 4px;
         line-height: 1.3;
+      }
+
+      .color-picker-container {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .color-picker-container input[type="color"] {
+        width: 40px !important;
+        height: 32px !important;
+        border: 1px solid var(--vscode-input-border, #3c3c3c);
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 0;
+        background: none;
+      }
+
+      .color-picker-container input[type="text"] {
+        flex: 1;
+        font-family: monospace;
+        text-transform: uppercase;
       }
 
       .power-tools-form-footer {
@@ -1938,6 +2949,12 @@ class PowerToolsUI {
         // Create new template
         const id = displayName.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, '-').substring(0, 30) + '-' + Date.now();
         
+        // Get the next order index
+        const customTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.customTemplates') || '[]');
+        const factoryTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.factoryTemplates') || '{}');
+        const allTemplates = [...customTemplates, ...Object.values(factoryTemplates)];
+        const maxOrder = allTemplates.reduce((max, t) => Math.max(max, t.order || 0), 0);
+        
         const newTemplate = {
           id,
           name,
@@ -1949,13 +2966,14 @@ class PowerToolsUI {
           hotkey,
           icon,
           autoSend,
+          order: maxOrder + 1,
           enabled: true,
           isFactory: false
         };
         
-        const customTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.customTemplates') || '[]');
-        customTemplates.push(newTemplate);
-        localStorage.setItem('dictator.powerTools.customTemplates', JSON.stringify(customTemplates));
+        const existingCustomTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.customTemplates') || '[]');
+        existingCustomTemplates.push(newTemplate);
+        localStorage.setItem('dictator.powerTools.customTemplates', JSON.stringify(existingCustomTemplates));
         
         console.log('[PowerTools] Template added:', newTemplate.name);
       }
@@ -2053,6 +3071,378 @@ class PowerToolsUI {
     }
   }
 
+  // Category Management Methods
+  showAddCategoryDialog(modal) {
+    this.showCategoryForm(modal, null, 'Add New Category');
+  }
+
+  showEditCategoryDialog(modal, categoryId) {
+    const config = this.config.load();
+    const category = config.categories[categoryId];
+    if (!category) return;
+    
+    this.showCategoryForm(modal, category, 'Edit Category');
+  }
+
+  showCategoryForm(parentModal, category, title) {
+    // Create form overlay
+    const formOverlay = document.createElement('div');
+    formOverlay.className = 'power-tools-form-overlay';
+    
+    const isEdit = category !== null;
+    const isFactory = category?.isFactory || false;
+    
+    console.log('[PowerTools] Creating category form:', category?.name);
+    
+    formOverlay.innerHTML = `
+      <div class="power-tools-form">
+        <div class="power-tools-form-header">
+          <h3>${title}</h3>
+          <button class="power-tools-close-btn" type="button">
+            <span class="codicon codicon-close"></span>
+          </button>
+        </div>
+        <div class="power-tools-form-content">
+          <div class="form-row">
+            <div class="form-group" style="flex: 0 0 73px;">
+              <label for="category-emoji">Emoji</label>
+              <div class="emoji-picker-container">
+                <button type="button" class="emoji-picker-btn" id="category-emoji-picker-btn">
+                  <span class="selected-emoji">${category?.emoji || '🔧'}</span>
+                  <span class="codicon codicon-chevron-down"></span>
+                </button>
+                <div class="emoji-picker-dropdown" id="category-emoji-picker-dropdown">
+                  <div class="emoji-grid">
+                    <!-- Emojis will be populated here -->
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="category-emoji" value="${category?.emoji || '🔧'}">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="category-name">Category Name</label>
+              <input type="text" id="category-name" value="${category?.name || ''}" placeholder="e.g., Testing" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="category-description">Description</label>
+            <input type="text" id="category-description" value="${category?.description || ''}" placeholder="Brief description of this category" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="category-color">Color</label>
+            <div class="color-picker-container">
+              <input type="color" id="category-color" value="${category?.color || '#6b7280'}">
+              <input type="text" id="category-color-text" value="${category?.color || '#6b7280'}" placeholder="#6b7280">
+            </div>
+          </div>
+        </div>
+        <div class="power-tools-form-footer">
+          <button type="button" class="power-tools-btn secondary" id="cancel-category-form">Cancel</button>
+          <button type="button" class="power-tools-btn primary" id="save-category">${isEdit ? 'Update' : 'Create'} Category</button>
+        </div>
+      </div>
+    `;
+
+    // Add form styles if not already added
+    this.addFormStyles();
+    
+    // Add to document
+    document.body.appendChild(formOverlay);
+    
+    // Focus first input
+    setTimeout(() => {
+      const firstInput = formOverlay.querySelector('#category-name');
+      if (firstInput) firstInput.focus();
+    }, 100);
+    
+    // Setup category form event listeners
+    this.setupCategoryFormEventListeners(formOverlay, parentModal, category, isEdit);
+  }
+
+  setupCategoryFormEventListeners(formOverlay, parentModal, category, isEdit) {
+    // Emoji list
+    const emojis = [
+      '⚙️', '🐛', '📚', '💡', '🔧', '🧪', '🚀', '🎯', '💻', '🎨',
+      '🛡️', '⚡', '🌟', '🔍', '📊', '🏗️', '🎭', '🎪', '🎲', '🎵',
+      '🔥', '❄️', '🌈', '🎈', '🎪', '🎨', '🎭', '🎪', '🎲', '🎵'
+    ];
+
+    // Populate emoji grid
+    const emojiGrid = formOverlay.querySelector('.emoji-grid');
+    if (emojiGrid) {
+      emojiGrid.innerHTML = '';
+      emojis.forEach(emoji => {
+        const emojiItem = document.createElement('div');
+        emojiItem.className = 'emoji-item';
+        emojiItem.textContent = emoji;
+        emojiItem.title = emoji;
+        
+        // Mark as selected if it's the current emoji
+        const currentEmoji = formOverlay.querySelector('#category-emoji').value;
+        if (emoji === currentEmoji) {
+          emojiItem.classList.add('selected');
+        }
+        
+        // Add click handler
+        emojiItem.addEventListener('click', () => {
+          // Update selected emoji
+          formOverlay.querySelector('#category-emoji').value = emoji;
+          formOverlay.querySelector('.selected-emoji').textContent = emoji;
+          
+          // Update selected state
+          emojiGrid.querySelectorAll('.emoji-item').forEach(item => item.classList.remove('selected'));
+          emojiItem.classList.add('selected');
+          
+          // Close dropdown
+          formOverlay.querySelector('#category-emoji-picker-dropdown').classList.remove('show');
+        });
+        
+        emojiGrid.appendChild(emojiItem);
+      });
+    }
+
+    // Emoji picker dropdown toggle
+    const emojiPickerBtn = formOverlay.querySelector('#category-emoji-picker-btn');
+    const emojiDropdown = formOverlay.querySelector('#category-emoji-picker-dropdown');
+    
+    if (emojiPickerBtn && emojiDropdown) {
+      emojiPickerBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        emojiDropdown.classList.toggle('show');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!emojiPickerBtn.contains(e.target) && !emojiDropdown.contains(e.target)) {
+          emojiDropdown.classList.remove('show');
+        }
+      });
+    }
+
+    // Color picker sync
+    const colorPicker = formOverlay.querySelector('#category-color');
+    const colorText = formOverlay.querySelector('#category-color-text');
+    
+    colorPicker?.addEventListener('change', (e) => {
+      colorText.value = e.target.value;
+    });
+    
+    colorText?.addEventListener('input', (e) => {
+      if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+        colorPicker.value = e.target.value;
+      }
+    });
+
+    // Close button
+    const closeBtn = formOverlay.querySelector('.power-tools-close-btn');
+    const cancelBtn = formOverlay.querySelector('#cancel-category-form');
+    
+    const closeForm = () => formOverlay.remove();
+    
+    closeBtn?.addEventListener('click', closeForm);
+    cancelBtn?.addEventListener('click', closeForm);
+    
+    // Click outside to close
+    formOverlay.addEventListener('click', (e) => {
+      if (e.target === formOverlay) closeForm();
+    });
+    
+    // ESC key to close
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeForm();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    // Save button
+    const saveBtn = formOverlay.querySelector('#save-category');
+    saveBtn?.addEventListener('click', () => {
+      this.saveCategoryFromForm(formOverlay, parentModal, category, isEdit);
+    });
+    
+    // Enter key to save
+    formOverlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        this.saveCategoryFromForm(formOverlay, parentModal, category, isEdit);
+      }
+    });
+  }
+
+  saveCategoryFromForm(formOverlay, parentModal, existingCategory, isEdit) {
+    // Get form values
+    const emoji = formOverlay.querySelector('#category-emoji').value;
+    const name = formOverlay.querySelector('#category-name').value.trim();
+    const description = formOverlay.querySelector('#category-description').value.trim();
+    const color = formOverlay.querySelector('#category-color').value;
+    
+    console.log('[PowerTools] Saving category:', name);
+    
+    // Validation
+    if (!name) {
+      alert('Category name is required!');
+      formOverlay.querySelector('#category-name').focus();
+      return;
+    }
+    
+    if (!description) {
+      alert('Category description is required!');
+      formOverlay.querySelector('#category-description').focus();
+      return;
+    }
+    
+    try {
+      if (isEdit) {
+        // Update existing category
+        const updatedCategory = {
+          ...existingCategory,
+          name,
+          emoji,
+          description,
+          color
+        };
+        
+        if (existingCategory.isFactory) {
+          // Update factory category
+          const factoryCategories = JSON.parse(localStorage.getItem('dictator.powerTools.factoryCategories') || '{}');
+          const factoryKey = Object.keys(factoryCategories).find(key => factoryCategories[key].id === existingCategory.id);
+          if (factoryKey) {
+            factoryCategories[factoryKey] = updatedCategory;
+            localStorage.setItem('dictator.powerTools.factoryCategories', JSON.stringify(factoryCategories));
+          }
+        } else {
+          // Update custom category
+          const customCategories = JSON.parse(localStorage.getItem('dictator.powerTools.customCategories') || '[]');
+          const index = customCategories.findIndex(c => c.id === existingCategory.id);
+          if (index >= 0) {
+            customCategories[index] = updatedCategory;
+            localStorage.setItem('dictator.powerTools.customCategories', JSON.stringify(customCategories));
+          }
+        }
+        
+        console.log('[PowerTools] Category updated:', updatedCategory.name);
+      } else {
+        // Create new category
+        const id = name.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, '-').substring(0, 30) + '-' + Date.now();
+        
+        // Get the next order index
+        const customCategories = JSON.parse(localStorage.getItem('dictator.powerTools.customCategories') || '[]');
+        const factoryCategories = JSON.parse(localStorage.getItem('dictator.powerTools.factoryCategories') || '{}');
+        const allCategories = [...customCategories, ...Object.values(factoryCategories)];
+        const maxOrder = allCategories.reduce((max, c) => Math.max(max, c.order || 0), 0);
+        
+        const newCategory = {
+          id,
+          name,
+          emoji,
+          description,
+          color,
+          order: maxOrder + 1,
+          enabled: true,
+          isFactory: false
+        };
+        
+        const existingCustomCategories = JSON.parse(localStorage.getItem('dictator.powerTools.customCategories') || '[]');
+        existingCustomCategories.push(newCategory);
+        localStorage.setItem('dictator.powerTools.customCategories', JSON.stringify(existingCustomCategories));
+        
+        console.log('[PowerTools] Category added:', newCategory);
+        console.log('[PowerTools] All custom categories now:', existingCustomCategories);
+      }
+      
+      // Refresh both categories and templates lists
+      const config = this.config.load();
+      this.populateCategoriesList(config.categories);
+      this.populateTemplatesList(config.templates);
+      this.registerHotkeys();
+      
+      // Close form
+      formOverlay.remove();
+      
+    } catch (error) {
+      console.error('[PowerTools] Failed to save category:', error);
+      alert('Failed to save category: ' + error.message);
+    }
+  }
+
+  showDeleteCategoryDialog(modal, categoryId) {
+    const config = this.config.load();
+    const category = config.categories[categoryId];
+    if (!category || category.isFactory) return;
+
+    if (confirm(`Are you sure you want to delete the category "${category.name}"?\n\nAll templates in this category will be moved to "General".`)) {
+      try {
+        // Move all templates from this category to 'general'
+        const templates = config.templates;
+        Object.values(templates).forEach(template => {
+          if (template.category === categoryId) {
+            template.category = 'general';
+            
+            // Update template storage
+            if (template.isFactory) {
+              const factoryTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.factoryTemplates') || '{}');
+              const factoryKey = Object.keys(factoryTemplates).find(key => factoryTemplates[key].id === template.id);
+              if (factoryKey) {
+                factoryTemplates[factoryKey].category = 'general';
+                localStorage.setItem('dictator.powerTools.factoryTemplates', JSON.stringify(factoryTemplates));
+              }
+            } else {
+              const customTemplates = JSON.parse(localStorage.getItem('dictator.powerTools.customTemplates') || '[]');
+              const customIndex = customTemplates.findIndex(t => t.id === template.id);
+              if (customIndex >= 0) {
+                customTemplates[customIndex].category = 'general';
+                localStorage.setItem('dictator.powerTools.customTemplates', JSON.stringify(customTemplates));
+              }
+            }
+          }
+        });
+        
+        // Delete the category
+        const customCategories = JSON.parse(localStorage.getItem('dictator.powerTools.customCategories') || '[]');
+        const filteredCategories = customCategories.filter(c => c.id !== categoryId);
+        localStorage.setItem('dictator.powerTools.customCategories', JSON.stringify(filteredCategories));
+        
+        // Refresh both lists
+        const newConfig = this.config.load();
+        this.populateCategoriesList(newConfig.categories);
+        this.populateTemplatesList(newConfig.templates);
+        this.registerHotkeys();
+        
+        console.log('[PowerTools] Category deleted:', category.name);
+      } catch (error) {
+        console.error('[PowerTools] Failed to delete category:', error);
+        alert('Failed to delete category: ' + error.message);
+      }
+    }
+  }
+
+  showRestoreCategoryDefaultsDialog(modal) {
+    if (confirm('Are you sure you want to restore all category settings to factory defaults? This will reset all category customizations.')) {
+      try {
+        // Clear custom categories and factory customizations
+        localStorage.removeItem('dictator.powerTools.factoryCategories');
+        localStorage.removeItem('dictator.powerTools.customCategories');
+        
+        // Refresh both categories and templates lists
+        const config = this.config.load();
+        this.populateCategoriesList(config.categories);
+        this.populateTemplatesList(config.templates);
+        this.registerHotkeys();
+        
+        console.log('[PowerTools] Category settings restored to defaults');
+        alert('Category settings restored to factory defaults!');
+      } catch (error) {
+        console.error('[PowerTools] Failed to restore category defaults:', error);
+        alert('Failed to restore category defaults: ' + error.message);
+      }
+    }
+  }
+
 }
 
 // Initialize Power Tools
@@ -2087,7 +3477,7 @@ window.PowerTools = {
   }
 };
 
-console.log('[PowerTools] Power Tools system loaded - v1.1.0 with AutoSend feature');
+console.log('[PowerTools] Power Tools system loaded - v1.4.2 with AutoSend, Drag-to-Reorder, Category Manager, and Cross-Category Dragging features (Category Order & Context Menu Fixes)');
 
 // Auto-dismiss Cursor corruption notification (same as dictator.js)
 setTimeout(() => {
