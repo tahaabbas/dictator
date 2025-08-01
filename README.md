@@ -17,9 +17,11 @@ Dictator adds voice recording and transcription to Cursor AI’s chat interface 
 - **Privacy by design** – all audio processing happens locally; no recordings are sent to external servers.
 
 ## Demo
-
-![Dictator for Cursor](https://echosys.dev/images/others/Dictator1.png)
+![Dictator for Cursor](https://echosys.dev/images/others/1.jpg)
+![Dictator for Cursor](https://echosys.dev/images/others/4.jpg)
 ![Dictator language and model selection](https://echosys.dev/images/others/Dictator2.png)
+![Dictator for Cursor](https://echosys.dev/images/others/2.jpg)
+![Dictator for Cursor](https://echosys.dev/images/others/3.jpg)
 
 ## Getting started
 
