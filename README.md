@@ -29,6 +29,7 @@ With Power Tools, you can:
 - Organize them into categories for different tasks (e.g., bug fixing, code review, documentation)
 - Inject prompts directly into Cursor Chat without retyping
 - Share your prompt collections with your team to maintain consistency
+- Added import/export settings functionality
 
 Empower your AI-assisted development with templates that work exactly the way you do.
 
