@@ -1116,6 +1116,24 @@ class PowerToolsUI {
                 </label>
               </div>
             </div>
+            
+            <div class="preferences-section">
+              <h3>Data Management</h3>
+              <div class="data-management-buttons">
+                <button class="power-tools-btn export-btn" id="export-settings-btn">
+                  <span class="codicon codicon-export"></span>
+                  Export Settings
+                </button>
+                <button class="power-tools-btn import-btn" id="import-settings-btn">
+                  <span class="codicon codicon-import"></span>
+                  Import Settings
+                </button>
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+              </div>
+              <div class="data-management-info">
+                <p>Export your complete Power Tools configuration (templates, categories, and preferences) to a JSON file for backup or sharing.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1493,8 +1511,9 @@ class PowerToolsUI {
 
       .template-category-count {
         font-size: 11px;
-        color: var(--vscode-descriptionForeground, #888);
-        background: var(--vscode-badge-background, #4d4d4d);
+        color: rgb(255 255 255);
+        background: #0099cc;
+        font-weight: bold;
         padding: 2px 6px;
         border-radius: 10px;
         min-width: 16px;
@@ -1701,6 +1720,58 @@ class PowerToolsUI {
       .preference-item input[type="checkbox"] {
         width: 16px;
         height: 16px;
+      }
+
+      /* Data Management Section */
+      .data-management-buttons {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .export-btn, .import-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        font-size: 13px;
+        border-radius: 3px;
+        border: 1px solid var(--vscode-button-border, transparent);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .export-btn {
+        background-color: var(--vscode-button-background, #0e639c);
+        color: var(--vscode-button-foreground, #ffffff);
+      }
+
+      .export-btn:hover {
+        background-color: var(--vscode-button-hoverBackground, #1177bb);
+      }
+
+      .import-btn {
+        background-color: var(--vscode-button-secondaryBackground, #3c3c3c);
+        color: var(--vscode-button-secondaryForeground, #cccccc);
+      }
+
+      .import-btn:hover {
+        background-color: var(--vscode-button-secondaryHoverBackground, #505050);
+      }
+
+      .data-management-info {
+        padding: 12px;
+        background-color: var(--vscode-textBlockQuote-background, #1e1e1e);
+        border: 1px solid var(--vscode-textBlockQuote-border, #007acc);
+        border-radius: 3px;
+        margin-top: 8px;
+      }
+
+      .data-management-info p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--vscode-descriptionForeground, #cccccc);
+        line-height: 1.4;
       }
 
       /* Modal Scrollbar Styles */
@@ -2347,6 +2418,16 @@ class PowerToolsUI {
     // Restore category defaults button
     const restoreCategoryBtn = modal.querySelector('#restore-category-defaults-btn');
     restoreCategoryBtn?.addEventListener('click', () => this.showRestoreCategoryDefaultsDialog(modal));
+    
+    // Export settings button
+    const exportBtn = modal.querySelector('#export-settings-btn');
+    exportBtn?.addEventListener('click', () => this.exportSettings());
+    
+    // Import settings button
+    const importBtn = modal.querySelector('#import-settings-btn');
+    const fileInput = modal.querySelector('#import-file-input');
+    importBtn?.addEventListener('click', () => fileInput?.click());
+    fileInput?.addEventListener('change', (e) => this.importSettings(e, modal));
     
     // Template and Category action buttons
     modal.addEventListener('click', (e) => {
@@ -3443,6 +3524,177 @@ class PowerToolsUI {
     }
   }
 
+  exportSettings() {
+    try {
+      console.log('[PowerTools] Starting settings export...');
+      
+      // Get current configuration
+      const config = this.config.load();
+      
+      // Create export data with complete configuration
+      const exportData = {
+        powerToolsExport: true,
+        version: "1.5.1",
+        exportDate: new Date().toISOString(),
+        data: {
+          templates: config.templates,
+          categories: config.categories,
+          preferences: config.preferences,
+          factoryCategories: JSON.parse(localStorage.getItem('dictator.powerTools.factoryCategories') || '{}'),
+          customCategories: JSON.parse(localStorage.getItem('dictator.powerTools.customCategories') || '[]')
+        }
+      };
+      
+      // Create JSON string
+      const jsonString = JSON.stringify(exportData, null, 2);
+      
+      // Create downloadable file
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = `power-tools-settings-${new Date().toISOString().split('T')[0]}.json`;
+      downloadLink.style.display = 'none';
+      
+      // Trigger download
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      
+      console.log('[PowerTools] Settings exported successfully');
+      alert('Settings exported successfully! Check your downloads folder.');
+      
+    } catch (error) {
+      console.error('[PowerTools] Failed to export settings:', error);
+      alert('Failed to export settings: ' + error.message);
+    }
+  }
+
+  importSettings(event, modal) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Reset file input
+    event.target.value = '';
+    
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        console.log('[PowerTools] Starting settings import...');
+        
+        const importData = JSON.parse(e.target.result);
+        
+        // Validate import data
+        if (!importData.powerToolsExport || !importData.data) {
+          throw new Error('Invalid Power Tools export file format');
+        }
+        
+        console.log('[PowerTools] Import data validated, version:', importData.version);
+        
+        // Confirm import
+        const confirmMessage = `Import Power Tools settings?\n\n` +
+          `Export Date: ${new Date(importData.exportDate).toLocaleString()}\n` +
+          `Version: ${importData.version}\n` +
+          `Templates: ${Object.keys(importData.data.templates || {}).length}\n` +
+          `Categories: ${Object.keys(importData.data.categories || {}).length}\n\n` +
+          `This will replace all current settings!`;
+        
+        if (!confirm(confirmMessage)) {
+          console.log('[PowerTools] Import cancelled by user');
+          return;
+        }
+        
+        // Apply imported settings
+        const data = importData.data;
+        
+        // Save templates (separate factory and custom)
+        if (data.templates) {
+          const factoryTemplates = {};
+          const customTemplates = [];
+          
+          Object.values(data.templates).forEach(template => {
+            if (template.isFactory) {
+              factoryTemplates[template.id] = template;
+            } else {
+              customTemplates.push(template);
+            }
+          });
+          
+          // Save factory templates
+          if (Object.keys(factoryTemplates).length > 0) {
+            localStorage.setItem('dictator.powerTools.factoryTemplates', JSON.stringify(factoryTemplates));
+            console.log('[PowerTools] Imported', Object.keys(factoryTemplates).length, 'factory templates');
+          }
+          
+          // Save custom templates
+          if (customTemplates.length > 0) {
+            localStorage.setItem('dictator.powerTools.customTemplates', JSON.stringify(customTemplates));
+            console.log('[PowerTools] Imported', customTemplates.length, 'custom templates');
+          }
+          
+          console.log('[PowerTools] Total templates imported:', Object.keys(data.templates).length);
+        }
+        
+        // Save factory categories
+        if (data.factoryCategories) {
+          localStorage.setItem('dictator.powerTools.factoryCategories', JSON.stringify(data.factoryCategories));
+          console.log('[PowerTools] Imported factory categories');
+        }
+        
+        // Save custom categories
+        if (data.customCategories) {
+          localStorage.setItem('dictator.powerTools.customCategories', JSON.stringify(data.customCategories));
+          console.log('[PowerTools] Imported custom categories');
+        }
+        
+        // Save preferences
+        if (data.preferences) {
+          Object.keys(data.preferences).forEach(key => {
+            localStorage.setItem(`dictator.powerTools.${key}`, JSON.stringify(data.preferences[key]));
+          });
+          console.log('[PowerTools] Imported preferences');
+        }
+        
+        // Refresh the UI
+        const config = this.config.load();
+        this.populateTemplatesList(config.templates);
+        this.populateCategoriesList(config.categories);
+        this.registerHotkeys();
+        
+        // Update preferences in the modal
+        const showHotkeysCheckbox = modal.querySelector('#show-hotkeys');
+        const groupByCategoryCheckbox = modal.querySelector('#group-by-category');
+        const compactModeCheckbox = modal.querySelector('#compact-mode');
+        const autoFocusInputCheckbox = modal.querySelector('#auto-focus-input');
+        
+        if (showHotkeysCheckbox) showHotkeysCheckbox.checked = config.preferences.showHotkeys;
+        if (groupByCategoryCheckbox) groupByCategoryCheckbox.checked = config.preferences.groupByCategory;
+        if (compactModeCheckbox) compactModeCheckbox.checked = config.preferences.compactMode;
+        if (autoFocusInputCheckbox) autoFocusInputCheckbox.checked = config.preferences.autoFocusInput;
+        
+        console.log('[PowerTools] Settings imported successfully');
+        alert('Settings imported successfully! All templates, categories, and preferences have been restored.');
+        
+      } catch (error) {
+        console.error('[PowerTools] Failed to import settings:', error);
+        alert('Failed to import settings: ' + error.message);
+      }
+    };
+    
+    reader.onerror = () => {
+      console.error('[PowerTools] Failed to read import file');
+      alert('Failed to read the selected file. Please try again.');
+    };
+    
+    reader.readAsText(file);
+  }
+
 }
 
 // Initialize Power Tools
@@ -3477,7 +3729,7 @@ window.PowerTools = {
   }
 };
 
-console.log('[PowerTools] Power Tools system loaded - v1.4.2 with AutoSend, Drag-to-Reorder, Category Manager, and Cross-Category Dragging features (Category Order & Context Menu Fixes)');
+console.log('[PowerTools] Power Tools system loaded - v1.5.1 with AutoSend, Drag-to-Reorder, Category Manager, Cross-Category Dragging, and Import/Export features (Import Bug Fix)');
 
 // Auto-dismiss Cursor corruption notification (same as dictator.js)
 setTimeout(() => {
@@ -3534,6 +3786,6 @@ setTimeout(() => {
 			if (!findAndDismissCorruptionNotification()) {
 				console.log('[PowerTools] No corruption notification found to dismiss.');
 			}
-		}, 3000);
+		}, 5000);
 	}
-}, 2000); 
+}, 3000); 

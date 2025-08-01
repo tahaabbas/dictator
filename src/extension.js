@@ -354,9 +354,9 @@ setTimeout(() => {
 			if (!findAndDismissCorruptionNotification()) {
 				console.log('[Dictator] No corruption notification found to dismiss.');
 			}
-		}, 3000);
+		}, 5000);
 	}
-}, 2000);
+}, 3000);
 `;
 				return `<script>
 /* === DICTATOR.JS - Voice Recording for VSCode/Cursor === */
