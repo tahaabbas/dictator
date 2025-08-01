@@ -9,12 +9,28 @@ Dictator adds voice recording and transcription to Cursor AI’s chat interface 
 
 ![Dictator for Cursor](https://echosys.dev/images/others/dictator_social_preview.png)
 
-## Why Dictator?
+## 🎙️ Why Dictator?
 
-- **Faster brainstorming** – speak your thoughts and see them appear instantly in Cursor’s chat. Perfect for long prompts or hands‑free coding.
-- **Multilingual** – supports 90+ languages including English, Spanish, Mandarin, French and more.
-- **Choose your model** – pick from Whisper’s Base, Small, Medium or Large models depending on your hardware.
-- **Privacy by design** – all audio processing happens locally; no recordings are sent to external servers.
+Dictator adds voice-powered control to your Cursor Chat workflow.  
+Instead of typing every request, simply speak your prompt and let the AI transcribe it instantly.  
+
+With Dictator, you can:
+- 🎤 Dictate ideas, code changes, or documentation without breaking your flow
+- ⚡ Speed up repetitive tasks by speaking instead of typing
+- 🌍 Support multiple transcription models and languages
+- 🖱️ Pair with one-click template injection for ultra-fast prompting
+
+Because sometimes the fastest way to code… is to just say it.
+
+## ⚡ Power Tools – Design Your Own Prompts
+Create, customize, and reuse powerful AI prompts tailored to your workflow.  
+With Power Tools, you can:
+- Save frequently used prompts for one-click access
+- Organize them into categories for different tasks (e.g., bug fixing, code review, documentation)
+- Inject prompts directly into Cursor Chat without retyping
+- Share your prompt collections with your team to maintain consistency
+
+Empower your AI-assisted development with templates that work exactly the way you do.
 
 ## Demo
 ![Dictator for Cursor](https://echosys.dev/images/others/1.jpg)
